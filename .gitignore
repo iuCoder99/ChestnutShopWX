@@ -1,0 +1,65 @@
+# ===================== 核心：敏感配置/证书忽略 =====================
+# 忽略开发环境敏感配置（核心需求）
+/src/main/resources/application-dev.yml
+# 忽略项目内的SSL证书/微信支付密钥文件
+/src/main/resources/*.p12
+/src/main/resources/*.pem
+# 可选：如果证书放在pay子目录，补充忽略
+/src/main/resources/pay/
+
+# ===================== Maven/Gradle 编译产物 =====================
+# 基础编译目录（删除了不合理的取反规则）
+target/
+build/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+**/classes/
+**/generated-sources/
+**/generated-test-sources/
+
+# Maven Wrapper（仅保留需要提交的jar，忽略临时文件）
+.mvn/wrapper/maven-wrapper.jar
+!/.mvn/wrapper/maven-wrapper.jar  # 确保jar不被忽略（Maven Wrapper核心文件）
+.mvn/
+!/.mvn/                           # 保留.mvn目录结构
+.mvn/timing/
+.mvn/wrapper/MavenWrapperDownloader.java
+
+# ===================== IDE 配置忽略 =====================
+# STS
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+out/  # IDEA编译输出目录
+
+# NetBeans
+/nbproject/private/
+
+# VS Code
+.vscode/
+
+# ===================== 通用临时/日志文件 =====================
+# 日志文件
+*.log
+logs/
+# 临时文件
+*.tmp
+*.bak
+*.swp
+.DS_Store  # Mac系统隐藏文件
+Thumbs.db  # Windows系统缩略图文件
+# 本地配置文件（避免本地调试配置提交）
+*.properties.local
+*.yml.local

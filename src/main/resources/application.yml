@@ -1,0 +1,60 @@
+server:
+  # HTTPS常用端口8443（如需启用HTTPS，证书密码在dev配置中）
+  port: 8443
+  # SSL证书基础配置（敏感密码在dev中）
+#  ssl:
+#    key-store: classpath:server.p12       # 证书在 resources 里，用 classpath 引用
+#    key-store-type: PKCS12                # 证书类型（生成时指定的）
+#    key-store-password: ${ssl.key-store-password:your_ssl_password_placeholder} # 敏感信息，dev配置中覆盖
+#    key-alias: tomcat                     # 生成证书时的别名（默认是 tomcat）
+
+spring:
+  profiles:
+    active: dev  # 激活开发环境配置
+  application:
+    name: uni-app
+  # 数据源公共配置（敏感信息在dev中）
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/uni_app?serverTimezone=UTC&useUnicode=true&characterEncoding=utf8&allowPublicKeyRetrieval=true&useSSL=false
+    username: ${spring.datasource.username:your_mysql_username_placeholder} # 敏感信息，dev配置中覆盖
+    password: ${spring.datasource.password:your_mysql_password_placeholder} # 敏感信息，dev配置中覆盖
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
+
+# MyBatis-Plus公共配置
+mybatis-plus:
+  mapper-locations: classpath:mapper/**/*.xml  # XML映射文件路径（可选）
+  type-aliases-package: com.app.uni_app.pojo.entity   # 实体类包路径
+  configuration:
+    map-underscore-to-camel-case: true  # 下划线转驼峰（MP默认开启，可省略）
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl  # 打印 SQL日志
+    default-enum-type-handler: com.baomidou.mybatisplus.core.handlers.MybatisEnumTypeHandler  # 开启枚举自动转换
+  global-config:
+    db-config:
+      id-type: auto  # 主键策略（auto=数据库自增）
+      logic-delete-field: is_deleted  # 逻辑删除字段（可选）
+      logic-delete-value: 1           # 逻辑删除值
+      logic-not-delete-value: 0       # 逻辑未删除值
+
+app:
+  jwt:
+    # JWT密钥（敏感信息，dev配置中覆盖）
+    admin-secret-key: ${app.jwt.admin-secret-key:your_admin_jwt_secret_placeholder}
+    admin-ttl: 7200000  # 非敏感，过期时间（毫秒）
+    admin-token-name: token  # 非敏感，前端令牌名称
+    user-secret-key: ${app.jwt.user-secret-key:your_user_jwt_secret_placeholder}
+    user-ttl: 7200000
+    user-token-name: token
+  wechat:
+    # 微信支付基础配置（敏感信息在dev中）
+    appid: ${app.wechat.appid:your_wechat_appid_placeholder}
+    secret: ${app.wechat.secret:your_wechat_secret_placeholder}
+    mchid: ${app.wechat.mchid:your_wechat_mchid_placeholder}
+    mchSerialNo: ${app.wechat.mchSerialNo:your_wechat_mchSerialNo_placeholder}
+    privateKeyFilePath: ${app.wechat.privateKeyFilePath:your_private_key_path_placeholder}
+    apiV3Key: ${app.wechat.apiV3Key:your_wechat_apiV3Key_placeholder}
+    weChatPayCertFilePath: ${app.wechat.weChatPayCertFilePath:your_wechat_cert_path_placeholder}
+    notifyUrl: https://58869fb.r2.cpolar.top/notify/paySuccess  # 非敏感，回调地址
+    refundNotifyUrl: https://58869fb.r2.cpolar.top/notify/refundSuccess  # 非敏感，退款回调地址

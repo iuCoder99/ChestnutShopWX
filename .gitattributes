@@ -1,0 +1,14 @@
+# 基础规则：让Git自动识别文本/二进制文件（必须加，避免其他文件换行符混乱）
+* text=auto
+
+# mvnw（Linux/Mac脚本）：LF换行符 + 可执行权限（关键补充）
+mvnw text eol=lf mode=0755
+
+# 所有.cmd文件（Windows脚本）：强制CRLF换行符（原有配置保留）
+*.cmd text eol=crlf
+
+# 可选：补充项目核心文件的换行符规则（适配你的Spring Boot项目）
+*.java text eol=lf
+*.yml text eol=lf
+*.xml text eol=lf
+*.sh text eol=lf mode=0755

@@ -1,0 +1,96 @@
+package com.app.uni_app.controller.admin;
+
+import com.app.uni_app.common.result.Result;
+import com.app.uni_app.service.CategoryService;
+import com.app.uni_app.service.ProductService;
+import jakarta.annotation.Resource;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/api")
+public class ProductController {
+    @Resource
+    private ProductService productService;
+
+    /**
+     * 获取热门商品
+     *
+     * @return
+     */
+    @RequestMapping("/product/hot")
+    public Result getHotProduct(@RequestParam(value = "limit", defaultValue = "10") Integer limit) {
+        return productService.getHotProduct(limit);
+    }
+
+    /**
+     * 获取商品详情
+     *
+     * @return
+     */
+    @GetMapping("/product/detail")
+    public Result getProductDetail(@RequestParam("productId") String productId) {
+        return productService.getProductDetail(productId);
+    }
+
+    /**
+     * 获取商品列表
+     *
+     * @return
+     */
+    @GetMapping("/product/list")
+    public Result getProductList(@RequestParam(value = "pageNum", defaultValue = "1") Integer pageNum,
+                                 @RequestParam(value = "pageSize", defaultValue = "10") Integer pageSize,
+                                 @RequestParam("categoryId") String categoryId) {
+        return productService.getProductList(pageNum, pageSize, categoryId);
+    }
+
+    /**
+     * 搜索商品列表
+     *
+     * @param pageNum
+     * @param pageSize
+     * @param categoryId
+     * @param keyword
+     * @return
+     */
+    @GetMapping("/product/search")
+    public Result searchProductList(@RequestParam(value = "pageNum", defaultValue = "1") Integer pageNum,
+                                    @RequestParam(value = "pageSize", defaultValue = "10") Integer pageSize,
+                                    @RequestParam(value = "sortType", defaultValue = "default")  String sortType,
+                                    String firstCategoryId,
+                                    String secondCategoryId,
+                                    String keyword) {
+        return productService.searchProductList(pageNum, pageSize, firstCategoryId,secondCategoryId,sortType, keyword);
+    }
+
+    /**
+     * 获取相关商品(通过categoryId建立联系)
+     *
+     * @param productId
+     * @param limit
+     * @return
+     */
+    @GetMapping("/product/related")
+    public Result getProductRelated(@RequestParam("productId") String productId
+            , @RequestParam(value = "limit", defaultValue = "10") Integer limit) {
+        return productService.getProductRelated(productId, limit);
+    }
+
+    /**
+     * 获取商品规格价格
+     *
+     * @return
+     */
+    @GetMapping("/product/spec/price")
+    public Result getProductSpecPrice(@RequestParam("productId") String productId,@RequestParam("specId") String specId) {
+        return productService.getProductSpecPrice(productId,specId);
+    }
+
+
+
+}

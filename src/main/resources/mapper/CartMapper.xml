@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.app.uni_app.mapper.CartMapper">
+    <resultMap id="CartItemResultMap" type="com.app.uni_app.pojo.entity.CartItem">
+        <!-- 主键字段映射：id标签（MyBatis会做性能优化） -->
+        <id property="id" column="id"/>
+        <!-- 普通非主键字段映射：result标签 -->
+        <result property="userId" column="user_id"/>
+        <result property="productId" column="product_id"/>
+        <result property="specId" column="spec_id"/>
+        <result property="quantity" column="quantity"/>
+        <result property="price" column="price"/>
+        <result property="stock" column="stock"/>
+        <result property="productName" column="product_name"/>
+        <result property="productImage" column="product_image"/>
+        <result property="specText" column="spec_text"/>
+
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+    <insert id="insertCartItem">
+        insert into cart(user_id, product_id, spec_id, quantity)
+        <foreach collection="specIdsAndCount" index="specId" item="count" separator="," >
+        values (#{userId},#{productId},#{specId},#{count})
+        </foreach>
+    </insert>
+    <update id="updateCartItemQuantity">
+        update cart
+        set quantity =#{quantity}
+        where user_id = #{userId}
+          and product_id = #{productId}
+          and spec_id = #{specId}
+    </update>
+    <select id="getCartList" resultMap="CartItemResultMap">
+        <include refid="selectCartItem_where_Sql"/>
+    </select>
+    <select id="getCartItem" resultMap="CartItemResultMap">
+        <include refid="selectCartItem_where_Sql"/>
+        and p.id =#{productId}
+        <if test="specId!=null and specId !=''">
+        and c.spec_id =#{specId}
+        </if>
+    </select>
+
+
+    <sql id="selectCartItem_where_Sql">
+        select
+        c.id as id,
+        c.user_id,
+        c.product_id,
+        c.spec_id,
+        c.quantity,
+        p.price,
+        p.stock,
+        p.name as product_name,
+        p.cover_image as product_image,
+        ps.spec_text,
+        c.create_time,
+        c.update_time
+        from cart c
+        inner join product p on c.product_id = p.id
+        left join product_spec ps on p.id = ps.product_id
+        where c.user_id = #{userId}  <!--用where过滤用户，确保只返回该用户的购物车数据，userId不会为null -->
+    </sql>
+    <sql id="groupBySql">
+        GROUP BY
+        c.id,  <!-- 购物车主键，简化GROUP BY，同时满足only_full_group_by -->
+        c.user_id,
+        c.product_id,
+        c.quantity,
+        p.price,
+        p.stock,
+        p.name,
+        p.cover_image,
+        ps.spec_text,
+        c.create_time,
+        c.update_time
+    </sql>
+</mapper>
