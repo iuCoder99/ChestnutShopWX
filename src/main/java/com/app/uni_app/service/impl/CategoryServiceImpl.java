@@ -4,16 +4,14 @@ import cn.hutool.core.bean.BeanUtil;
 import com.app.uni_app.common.constant.MessageConstant;
 import com.app.uni_app.common.result.Result;
 import com.app.uni_app.pojo.dto.CategoryDTO;
+import com.app.uni_app.pojo.emums.CommonStatus;
 import com.app.uni_app.pojo.entity.Category;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.app.uni_app.service.CategoryService;
 import com.app.uni_app.mapper.CategoryMapper;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -82,6 +80,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
 
     /**
      * 添加分类
+     *
      * @param categoryDTO
      * @return
      */
@@ -94,6 +93,58 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
         }
         return getCategoryChildren(category.getId().toString());
 
+    }
+
+    /**
+     * 删除分类
+     *
+     * @param categoryId
+     * @return
+     */
+    @Override
+    public Result deleteCategory(String categoryId) {
+        boolean isSuccess = removeById(categoryId);
+        if (!isSuccess) {
+            return Result.error(MessageConstant.DELETE_ERROR);
+        }
+        return Result.success();
+    }
+
+
+    /**
+     * 更新分类
+     *
+     * @param id
+     * @return
+     */
+    @Override
+    public Result updateCategoryInfo(String id, CategoryDTO categoryDTO) {
+        Category category = BeanUtil.copyProperties(categoryDTO, Category.class);
+        category.setId(Long.valueOf(id));
+        boolean isSuccess = updateById(category);
+        if (!isSuccess) {
+            return Result.error(MessageConstant.SQL_MESSAGE_SAVE_ERROR);
+        }
+        return Result.success(category);
+    }
+
+    /**
+     * 更新分类状态
+     *
+     * @param id
+     * @param status
+     * @return
+     */
+    @Override
+    public Result updateCategoryStatus(String id, String status) {
+        boolean isSuccess = lambdaUpdate().eq(Category::getId, id).set(Category::getStatus, status).update();
+        if (!isSuccess) {
+            return Result.error(MessageConstant.SQL_MESSAGE_SAVE_ERROR);
+        }
+        Map<String, Object> map = new HashMap<>(2);
+        map.put(Category.Fields.id,id);
+        map.put(Category.Fields.status, CommonStatus.getValueByNumber(Integer.valueOf(status)));
+        return Result.success(map);
     }
 }
 

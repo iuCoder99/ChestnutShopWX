@@ -1,6 +1,6 @@
 server:
   # HTTPS常用端口8443（如需启用HTTPS，证书密码在dev配置中）
-  port: 8443
+  port: 8080
   # SSL证书基础配置（敏感密码在dev中）
 #  ssl:
 #    key-store: classpath:server.p12       # 证书在 resources 里，用 classpath 引用

@@ -45,10 +45,41 @@ public class CategoryController {
         return categoryService.addCategory(categoryDTO);
     }
 
-    // TODO 接口文档传参 ???
-    @DeleteMapping("/admin/category/delete")
-    public Result deleteCategory() {
-        return null;
+
+    /**
+     * 删除分类
+     *
+     * @param categoryId
+     * @return
+     */
+    @DeleteMapping("/admin/category/{categoryId}")
+    public Result deleteCategory(@PathVariable String categoryId) {
+        return categoryService.deleteCategory(categoryId);
+    }
+
+
+    /**
+     * 更新分类
+     *
+     * @param id
+     * @return
+     */
+    @PutMapping("/admin/category/{id}")
+    public Result updateCategoryInfo(@PathVariable String id,@RequestBody CategoryDTO categoryDTO) {
+        return categoryService.updateCategoryInfo(id,categoryDTO);
+    }
+
+
+    /**
+     * 更新分类状态
+     *
+     * @param id
+     * @param status
+     * @return
+     */
+    @PutMapping("/admin/category/{id}/status")
+    public Result updateCategoryStatus(@PathVariable String id, @RequestParam String status) {
+        return categoryService.updateCategoryStatus(id, status);
     }
 
 

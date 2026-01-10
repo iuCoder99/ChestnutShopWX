@@ -3,6 +3,7 @@ package com.app.uni_app.pojo.emums;
 import com.baomidou.mybatisplus.annotation.EnumValue;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
+import io.swagger.models.auth.In;
 import lombok.Getter;
 
 @Getter
@@ -21,6 +22,20 @@ public enum CommonStatus {
         this.value = value;
         this.number = number;
         this.desc = desc;
+    }
+
+    /**
+     * 根据传递 number返回 value
+     * @param number
+     * @return
+     */
+    public static String getValueByNumber(Integer number){
+        for (CommonStatus commonStatus : values()) {
+            if (commonStatus.number.equals(number)){
+                return commonStatus.value;
+            }
+        }
+        throw new IllegalArgumentException("无效的CommonStatus.number:" + number);
     }
 
 
