@@ -17,6 +17,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import io.swagger.models.auth.In;
 import jakarta.annotation.Resource;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
@@ -30,12 +31,13 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
-
+@Slf4j
 public class CartServiceImpl extends ServiceImpl<CartMapper, Cart> implements CartService {
     @Resource
     private CartMapper cartMapper;
-    @Autowired
-    private ApplicationContext applicationContext;
+
+    private static final String DELETE_IDS = "deletedIds";
+    private static final String SUCCESS_COUNT = "successCount";
 
     /**
      * 获取购物车列表
@@ -56,7 +58,7 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, Cart> implements Ca
      * @return
      */
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public Result addProductToCart(CartProductDTO cartProductDTO) {
         String userId = BaseContext.getUserInfo().getId();
         String productId = cartProductDTO.getProductId();
@@ -81,7 +83,7 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, Cart> implements Ca
      * @return
      */
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public Result clearCart() {
         String userId = BaseContext.getUserInfo().getId();
         List<Cart> removeCarts = lambdaQuery().eq(Cart::getUserId, userId).list();
@@ -93,8 +95,8 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, Cart> implements Ca
         lambdaQueryWrapper.eq(Cart::getUserId, userId);
         int deletedRowsCount = cartMapper.delete(lambdaQueryWrapper);
         Map<String, Object> map = new HashMap<>(2);
-        map.put("deletedIds", removeCartIds);
-        map.put("successCount", deletedRowsCount);
+        map.put(DELETE_IDS, removeCartIds);
+        map.put(SUCCESS_COUNT, deletedRowsCount);
         return Result.success(map);
     }
 
@@ -106,8 +108,9 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, Cart> implements Ca
      * @return
      */
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public Result deleteCartProduct(String productIds, String specIds) {
+        log.error("--------productIds"+productIds+";specIds:"+specIds+"----------");
         if (productIds == null || specIds == null) {
             return Result.error(MessageConstant.DATA_ERROR);
         }
@@ -140,88 +143,79 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, Cart> implements Ca
             return Result.error(MessageConstant.DELETE_ERROR);
         }
         HashMap<String, Object> map = new HashMap<>(2);
-        map.put("deletedIds", productIdsList);
-        map.put("successCount", productIdsList.size());
+        map.put(DELETE_IDS, productIdsList);
+        map.put(SUCCESS_COUNT, productIdsList.size());
         return Result.success(map);
     }
 
-    /**
-     * 按商品和规格更新购物车商品数量
-     *
-     * @param productId
-     * @param specId
-     * @param quantity
-     * @return
-     */
-    @Override
-    @Transactional
-    public Result updateCartProductQuantity(String productId, String specId, String quantity) {
-        if (Integer.parseInt(quantity) < 0) {
-            return Result.error(MessageConstant.DATA_ERROR);
-        }
-        String userId = BaseContext.getUserInfo().getId();
-        Cart cart = lambdaQuery().eq(Cart::getUserId, userId).eq(Cart::getProductId, productId).eq(Cart::getSpecId, specId).one();
-        if (cart == null) {
-            return Result.error(MessageConstant.DATA_ERROR);
-        }
-        boolean isSuccess = lambdaUpdate().set(Cart::getQuantity, quantity)
-                .eq(Cart::getUserId, userId).eq(Cart::getProductId, productId)
-                .eq(Cart::getSpecId, specId).update();
-        if (!isSuccess) {
-            return Result.error(MessageConstant.SQL_MESSAGE_SAVE_ERROR);
-        }
-        HashMap<String, Object> map = new HashMap<>(2);
-        map.put("cartId", cart.getId());
-        map.put("quantity", quantity);
-        return Result.success(map);
-    }
 
     /**
-     * 合并购物车到云端
+     * 将前端的购物车数据(List)更新到数据库
      *
      * @param cartDTO
      * @return
      */
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public Result mergeCart(CartDTO cartDTO) {
-        List<CartProductDTO> cartsNoStored = cartDTO.getCartItems();
-        Integer mergedCount = cartsNoStored.stream().map(CartProductDTO::getQuantity).reduce(0, Integer::sum);
-        if (cartsNoStored.isEmpty()) {
+        List<CartProductDTO> carts = cartDTO.getCartItems();
+        if (carts.isEmpty()) {
             return Result.success();
         }
         String userId = BaseContext.getUserInfo().getId();
-        List<Cart> cartList = cartsNoStored.stream().map(cartNoStored -> BeanUtil.copyProperties(cartNoStored, Cart.class)).toList();
-        LambdaQueryWrapper<Cart> lambdaQueryWrapper = new LambdaQueryWrapper<>();
-        lambdaQueryWrapper.eq(Cart::getUserId, userId);
-        List<Cart> cartsStored = list(lambdaQueryWrapper);
-        //云端购物车为空
-        if (cartsStored.isEmpty()) {
-            return saveAndReturnResult(cartList, mergedCount, mergedCount, userId);
-        }
-        remove(lambdaQueryWrapper);
-        Integer totalCount = Stream.concat(cartList.stream(), cartsStored.stream()).map(Cart::getQuantity).reduce(0, Integer::sum);
-        List<Cart> mergedCartList = Stream.concat(cartsStored.stream(), cartList.stream())
-                .collect(Collectors.groupingBy((Cart cart) -> Map.entry(cart.getProductId(), cart.getSpecId())))
-                .values().stream().map(carts -> {
-                    Integer quantity = carts.stream().map(Cart::getQuantity).reduce(0, Integer::sum);
-                    Cart cart = carts.get(0);
-                    cart.setQuantity(quantity);
-                    return cart;
-                }).toList();
-        mergedCartList.forEach(cart -> cart.setUserId(Long.valueOf(userId)));
-        return saveAndReturnResult(mergedCartList, mergedCount, totalCount, userId);
+        List<Cart> cartList = BeanUtil.copyToList(carts, Cart.class).stream()
+                .peek(cart -> cart.setUserId(Long.valueOf(userId))).toList();
+        remove(new LambdaQueryWrapper<Cart>().eq(Cart::getUserId, userId));
+        saveBatch(cartList);
+        return Result.success(carts);
     }
 
-    private @NonNull Result<?> saveAndReturnResult(List<Cart> cartList, Integer mergedCount, Integer totalCount, String userId) {
-        cartList.forEach(cart -> cart.setUserId(Long.valueOf(userId)));
-        boolean isSuccess = applicationContext.getBean(CartServiceImpl.class).saveBatch(cartList);
-        if (!isSuccess) {
-            return Result.error(MessageConstant.SQL_MESSAGE_SAVE_ERROR);
-        }
-        HashMap<String, Object> map = new HashMap<>(2);
-        map.put("mergedCount", mergedCount);
-        map.put("totalCount", totalCount);
-        return Result.success(map);
-    }
+
+    /*
+      合并购物车到云端(业务调整废弃,旧版功能逻辑:将数据库的购物车与前端传递的购物车进行合并)
+      @param cartDTO
+     * @return
+     */
+//    @Override
+//    @Transactional
+//    public Result mergeCart(CartDTO cartDTO) {
+//        List<CartProductDTO> cartsNoStored = cartDTO.getCartItems();
+//        Integer mergedCount = cartsNoStored.stream().map(CartProductDTO::getQuantity).reduce(0, Integer::sum);
+//        if (cartsNoStored.isEmpty()) {
+//            return Result.success();
+//        }
+//        String userId = BaseContext.getUserInfo().getId();
+//        List<Cart> cartList = cartsNoStored.stream().map(cartNoStored -> BeanUtil.copyProperties(cartNoStored, Cart.class)).toList();
+//        LambdaQueryWrapper<Cart> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+//        lambdaQueryWrapper.eq(Cart::getUserId, userId);
+//        List<Cart> cartsStored = list(lambdaQueryWrapper);
+//        //云端购物车为空
+//        if (cartsStored.isEmpty()) {
+//            return saveAndReturnResult(cartList, mergedCount, mergedCount, userId);
+//        }
+//        remove(lambdaQueryWrapper);
+//        Integer totalCount = Stream.concat(cartList.stream(), cartsStored.stream()).map(Cart::getQuantity).reduce(0, Integer::sum);
+//        List<Cart> mergedCartList = Stream.concat(cartsStored.stream(), cartList.stream())
+//                .collect(Collectors.groupingBy((Cart cart) -> Map.entry(cart.getProductId(), cart.getSpecId())))
+//                .values().stream().map(carts -> {
+//                    Integer quantity = carts.stream().map(Cart::getQuantity).reduce(0, Integer::sum);
+//                    Cart cart = carts.get(0);
+//                    cart.setQuantity(quantity);
+//                    return cart;
+//                }).toList();
+//        mergedCartList.forEach(cart -> cart.setUserId(Long.valueOf(userId)));
+//        return saveAndReturnResult(mergedCartList, mergedCount, totalCount, userId);
+//    }
+//
+//    private @NonNull Result<?> saveAndReturnResult(List<Cart> cartList, Integer mergedCount, Integer totalCount, String userId) {
+//        cartList.forEach(cart -> cart.setUserId(Long.valueOf(userId)));
+//        boolean isSuccess = applicationContext.getBean(CartServiceImpl.class).saveBatch(cartList);
+//        if (!isSuccess) {
+//            return Result.error(MessageConstant.SQL_MESSAGE_SAVE_ERROR);
+//        }
+//        HashMap<String, Object> map = new HashMap<>(2);
+//        map.put("mergedCount", mergedCount);
+//        map.put("totalCount", totalCount);
+//        return Result.success(map);
+//    }
 }

@@ -17,7 +17,6 @@ public interface CartService extends IService<Cart> {
 
     Result deleteCartProduct(String productIds, String specIds);
 
-    Result updateCartProductQuantity(String productId, String specId, String quantity);
 
     Result mergeCart(CartDTO cartDTO);
 

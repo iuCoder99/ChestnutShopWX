@@ -45,6 +45,7 @@ public class CartController {
 
     /**
      * 批量删除购物车商品(单个+批量)
+     * 冗余接口(暂定)
      *
      * @return
      */
@@ -53,27 +54,13 @@ public class CartController {
         return cartService.deleteCartProduct(productIds, specIds);
     }
 
-
     /**
-     * 按商品和规格更新购物车商品数量
-     *
-     * @return
-     */
-    @PutMapping("/products/{productId}/specs/{specId}")
-    public Result updateCartProductQuantity(@PathVariable String productId
-            , @PathVariable String specId
-            , @RequestParam("quantity") String quantity) {
-        return cartService.updateCartProductQuantity(productId, specId, quantity);
-    }
-
-
-    /**
-     * 合并购物车到云端
+     * 将前端的购物车数据(List)更新到数据库
      *
      * @param cartDTO
      * @return
      */
-    @PostMapping("/merge")
+    @PutMapping("/update")
     public Result mergeCart(@RequestBody CartDTO cartDTO) {
         return cartService.mergeCart(cartDTO);
     }
