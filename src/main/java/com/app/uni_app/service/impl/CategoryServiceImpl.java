@@ -1,7 +1,8 @@
 package com.app.uni_app.service.impl;
 
-import cn.hutool.core.bean.BeanUtil;
+
 import com.app.uni_app.common.constant.MessageConstant;
+import com.app.uni_app.common.mapstruct.CopyMapper;
 import com.app.uni_app.common.result.Result;
 import com.app.uni_app.pojo.dto.CategoryDTO;
 import com.app.uni_app.pojo.emums.CommonStatus;
@@ -9,6 +10,8 @@ import com.app.uni_app.pojo.entity.Category;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.app.uni_app.service.CategoryService;
 import com.app.uni_app.mapper.CategoryMapper;
+import jakarta.annotation.Resource;
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -22,6 +25,9 @@ import java.util.stream.Collectors;
 @Service
 public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
         implements CategoryService {
+    @Resource
+    private CopyMapper copyMapper;
+
     /**
      * 获取分类树
      *
@@ -47,7 +53,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
      * @param parentCategories
      */
     private void buildCategoryTree(List<Category> allCategories, List<Category> parentCategories) {
-        if (allCategories.isEmpty() || parentCategories.isEmpty()) {
+        if (CollectionUtils.isEmpty(allCategories) || CollectionUtils.isEmpty(parentCategories)) {
             return;
         }
         Map<Long, List<Category>> groupMap = allCategories.stream().collect(Collectors.groupingBy(Category::getParentId));
@@ -86,7 +92,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
      */
     @Override
     public Result addCategory(CategoryDTO categoryDTO) {
-        Category category = BeanUtil.copyProperties(categoryDTO, Category.class);
+        Category category = copyMapper.categoryDTOToCategory(categoryDTO);
         boolean isSuccess = save(category);
         if (!isSuccess) {
             return Result.error(MessageConstant.SQL_MESSAGE_SAVE_ERROR);
@@ -119,7 +125,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
      */
     @Override
     public Result updateCategoryInfo(String id, CategoryDTO categoryDTO) {
-        Category category = BeanUtil.copyProperties(categoryDTO, Category.class);
+        Category category = copyMapper.categoryDTOToCategory(categoryDTO);
         category.setId(Long.valueOf(id));
         boolean isSuccess = updateById(category);
         if (!isSuccess) {
@@ -142,7 +148,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
             return Result.error(MessageConstant.SQL_MESSAGE_SAVE_ERROR);
         }
         Map<String, Object> map = new HashMap<>(2);
-        map.put(Category.Fields.id,id);
+        map.put(Category.Fields.id, id);
         map.put(Category.Fields.status, CommonStatus.getValueByNumber(Integer.valueOf(status)));
         return Result.success(map);
     }

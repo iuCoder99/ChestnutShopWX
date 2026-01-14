@@ -35,7 +35,7 @@ public class CartController {
 
     /**
      * 清空购物车
-     *
+     *冗余接口(暂定)
      * @return
      */
     @DeleteMapping("/clear")

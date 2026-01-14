@@ -1,6 +1,5 @@
 package com.app.uni_app.pojo.dto;
 
-import io.swagger.models.auth.In;
 import lombok.Data;
 
 @Data

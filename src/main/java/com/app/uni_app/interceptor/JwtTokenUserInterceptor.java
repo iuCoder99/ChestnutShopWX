@@ -49,6 +49,7 @@ public class JwtTokenUserInterceptor implements HandlerInterceptor {
         try {
             log.info("jwt校验:{}", token);
             Claims claims = JwtUtil.parseJWT(jwtProperties.getUserSecretKey(), token);
+            log.error("--------claims:"+claims);
             String userId = claims.get(JwtTokenClaimsConstant.USER_ID).toString();
             log.info("当前用户的id：{}", userId);
             UserInfo userInfo = UserInfo.builder().id(userId)

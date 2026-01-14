@@ -3,7 +3,6 @@ package com.app.uni_app.pojo.emums;
 import com.baomidou.mybatisplus.annotation.EnumValue;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
-import io.swagger.models.auth.In;
 import lombok.Getter;
 
 @Getter

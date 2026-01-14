@@ -1,14 +1,15 @@
 package com.app.uni_app.service.impl;
 
-import cn.hutool.core.bean.BeanUtil;
 import com.app.uni_app.common.constant.MessageConstant;
+import com.app.uni_app.common.mapstruct.CopyMapper;
 import com.app.uni_app.common.result.Result;
+import com.app.uni_app.mapper.NoticeMapper;
 import com.app.uni_app.pojo.dto.NoticeDTO;
 import com.app.uni_app.pojo.entity.Notice;
+import com.app.uni_app.service.NoticeService;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.app.uni_app.service.NoticeService;
-import com.app.uni_app.mapper.NoticeMapper;
+import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -21,6 +22,8 @@ import java.util.List;
 @Service
 public class NoticeServiceImpl extends ServiceImpl<NoticeMapper, Notice>
         implements NoticeService {
+    @Resource
+    private CopyMapper copyMapper;
     /**
      * 获取最新 notice
      *
@@ -42,7 +45,7 @@ public class NoticeServiceImpl extends ServiceImpl<NoticeMapper, Notice>
      */
     @Override
     public Result addNotice(NoticeDTO noticeDTO) {
-        Notice notice = BeanUtil.copyProperties(noticeDTO, Notice.class);
+        Notice notice = copyMapper.noticeDTOToNotice(noticeDTO);
         boolean isSuccess = save(notice);
         if (!isSuccess) {
             return Result.error(MessageConstant.SQL_MESSAGE_SAVE_ERROR);
@@ -62,7 +65,7 @@ public class NoticeServiceImpl extends ServiceImpl<NoticeMapper, Notice>
         if (noticeDTO.getId() == null) {
             return Result.error(MessageConstant.DATA_ERROR);
         }
-        Notice notice = BeanUtil.copyProperties(noticeDTO, Notice.class);
+        Notice notice = copyMapper.noticeDTOToNotice(noticeDTO);
         boolean isSuccess = updateById(notice);
         if (!isSuccess) {
             return Result.error(MessageConstant.TOM_CAT_ERROR);

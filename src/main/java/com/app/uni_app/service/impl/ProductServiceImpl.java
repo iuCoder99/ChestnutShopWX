@@ -1,10 +1,9 @@
 package com.app.uni_app.service.impl;
 
 
-import cn.hutool.core.bean.BeanUtil;
+import com.app.uni_app.common.mapstruct.CopyMapper;
 import com.app.uni_app.common.result.PageResult;
 import com.app.uni_app.common.result.Result;
-import com.app.uni_app.pojo.emums.CommonStatus;
 import com.app.uni_app.pojo.emums.ProductSortType;
 import com.app.uni_app.pojo.entity.Product;
 import com.app.uni_app.pojo.entity.ProductSpec;
@@ -17,6 +16,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.app.uni_app.service.ProductService;
 import com.app.uni_app.mapper.ProductMapper;
 import jakarta.annotation.Resource;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -34,6 +34,9 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
 
     @Resource
     private ProductSpecService productSpecService;
+
+    @Resource
+    private CopyMapper copyMapper;
 
     /**
      * 获取热门商品
@@ -91,7 +94,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         String dbValue = ProductSortType.getByValue(sortType).getDbValue();
         IPage<Product> page;
         //只有一级分类
-        if (firstCategoryId !=null && !firstCategoryId.isEmpty()&& (secondCategoryId == null||secondCategoryId.isEmpty())) {
+        if (StringUtils.isNotBlank(firstCategoryId) && StringUtils.isBlank(secondCategoryId)) {
             page = productMapper.selectByFirstCategoryIdAndKeywordPage(new Page<>(pageNum, pageSize), firstCategoryId, dbValue, keyword);
         }
         //一级+二级 或 空
@@ -125,7 +128,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
     public Result getProductSpecPrice(String productId, String specId) {
         ProductSpec productSpec = productSpecService.lambdaQuery().eq(ProductSpec::getProductId, productId)
                 .eq(ProductSpec::getId, specId).one();
-        ProductSpecVO productSpecVO = BeanUtil.copyProperties(productSpec, ProductSpecVO.class);
+        ProductSpecVO productSpecVO = copyMapper.productSpecToProductSpecVO(productSpec);
         return Result.success(productSpecVO);
     }
 }

@@ -4,7 +4,6 @@ import com.app.uni_app.common.context.BaseContext;
 import com.app.uni_app.common.result.Result;
 import com.app.uni_app.pojo.dto.UserDTO;
 import com.app.uni_app.pojo.dto.UserWechatDTO;
-import com.app.uni_app.pojo.emums.UserType;
 import com.app.uni_app.service.LoginService;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
@@ -59,7 +58,7 @@ public class LoginController {
     }
 
     /**
-     * 创建账户
+     * 创建普通用户账户
      *
      * @param username
      * @param password
@@ -68,9 +67,8 @@ public class LoginController {
     @PostMapping("/create/account")
     public Result createAccount(@RequestParam String username
             , @RequestParam String password
-            , @RequestParam String userType
-            , @RequestParam(defaultValue = "0") String isEnterpriseAuth) {
-        return loginService.createAccount(username, password, userType, isEnterpriseAuth);
+            , @RequestParam String phone) {
+        return loginService.createAccount(username, password, phone);
     }
 
 

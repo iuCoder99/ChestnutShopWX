@@ -3,14 +3,15 @@ package com.app.uni_app.common.result;
 import com.app.uni_app.pojo.emums.EnterpriseAuthStatus;
 import com.app.uni_app.pojo.emums.UserType;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-
-import java.time.LocalDateTime;
+import lombok.NoArgsConstructor;
 
 @Builder
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class UserInfo {
     /**
      * 用户 ID
@@ -43,9 +44,9 @@ public class UserInfo {
     private UserType userType;
 
     /**
-     * 企业认证状态（boolean）
+     * 企业认证状态
      */
-    private Boolean isEnterpriseAuth;
+    private Integer isEnterpriseAuth;
 
     /**
      * 企业认证状态详情（枚举：unauth/authing/authsuccess/authfailed）

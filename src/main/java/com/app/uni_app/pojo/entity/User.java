@@ -1,6 +1,5 @@
 package com.app.uni_app.pojo.entity;
 
-import com.app.uni_app.pojo.emums.EnterpriseAuthStatus;
 import com.app.uni_app.pojo.emums.UserType;
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.AllArgsConstructor;
@@ -93,6 +92,7 @@ public class User {
 
     @TableField(exist = false)
     private com.app.uni_app.pojo.emums.EnterpriseAuthStatus enterpriseAuthStatus;
+
     /**
      * 备注（管理员添加）
      */

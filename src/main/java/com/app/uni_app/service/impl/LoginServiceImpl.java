@@ -1,11 +1,9 @@
 package com.app.uni_app.service.impl;
 
-import cn.hutool.core.bean.BeanUtil;
-import cn.hutool.crypto.digest.BCrypt;
-import cn.hutool.json.JSONObject;
 import com.app.uni_app.common.constant.JwtTokenClaimsConstant;
 import com.app.uni_app.common.constant.MessageConstant;
 import com.app.uni_app.common.context.BaseContext;
+import com.app.uni_app.common.mapstruct.CopyMapper;
 import com.app.uni_app.common.result.LoginInfo;
 import com.app.uni_app.common.result.Result;
 import com.app.uni_app.common.result.UserInfo;
@@ -14,18 +12,22 @@ import com.app.uni_app.common.utils.WechatLoginUtil;
 import com.app.uni_app.mapper.LoginMapper;
 import com.app.uni_app.pojo.dto.UserDTO;
 import com.app.uni_app.pojo.dto.UserWechatDTO;
-import com.app.uni_app.pojo.emums.UserType;
 import com.app.uni_app.pojo.entity.User;
 import com.app.uni_app.properties.JwtProperties;
 import com.app.uni_app.service.LoginService;
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
+import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
-
+import java.util.Objects;
+@Slf4j
 @Service
 public class LoginServiceImpl extends ServiceImpl<LoginMapper, User> implements LoginService {
 
@@ -38,6 +40,11 @@ public class LoginServiceImpl extends ServiceImpl<LoginMapper, User> implements 
     @Resource
     private WechatLoginUtil wechatLoginUtil;
 
+    @Resource
+    private CopyMapper copyMapper;
+
+    private static final String OPEN_ID = "openid";
+
     /**
      * 用户登录
      * 二级登录,用户自选(可自由切换账号)
@@ -49,13 +56,13 @@ public class LoginServiceImpl extends ServiceImpl<LoginMapper, User> implements 
     public Result loginByAccount(UserDTO userDTO) {
         String password = userDTO.getPassword();
         User user = lambdaQuery().eq(User::getUsername, userDTO.getUsername()).one();
-        if (user == null) {
+        if (Objects.isNull(user)) {
             return Result.error(MessageConstant.ACCOUNT_NOT_FOUND);
         }
         if (!BCrypt.checkpw(password, user.getPassword())) {
             return Result.error(MessageConstant.LOGIN_ERROR);
         }
-        UserInfo userInfo = BeanUtil.copyProperties(user, UserInfo.class);
+        UserInfo userInfo = copyMapper.userToUserInfo(user);
         String token = getToken(userInfo);
         BaseContext.setUserInfo(userInfo);
         return Result.success(new LoginInfo(token, userInfo));
@@ -80,23 +87,26 @@ public class LoginServiceImpl extends ServiceImpl<LoginMapper, User> implements 
     @Override
     public Result loginByWechat(UserWechatDTO userWechatDTO) {
         String code = userWechatDTO.getCode();
-        JSONObject json = wechatLoginUtil.getWechatUserInfo(code);
-        String openid = json.getStr("openid");
-        if (openid == null) {
+        JsonNode json = wechatLoginUtil.getWechatUserInfo(code);
+        JsonNode jsonNode = json.get(OPEN_ID);
+        String openid= jsonNode==null? null:jsonNode.asText();
+        if (StringUtils.isBlank(openid)) {
             return Result.error(MessageConstant.GET_OPENID_ERROR);
         }
         User user = this.lambdaQuery().eq(User::getOpenid, openid).one();
         //新用户
-        if (user == null) {
+        if (Objects.isNull(user)) {
             User userNew = new User();
             userNew.setOpenid(openid).setNickname(userWechatDTO.getNickName()).setAvatar(userWechatDTO.getAvatarUrl()).setFirstLoginTime(LocalDateTime.now()).setLastLoginTime(LocalDateTime.now());
             loginMapper.insert(userNew);
-            UserInfo userInfo = BeanUtil.copyProperties(userNew, UserInfo.class);
+            UserInfo userInfo = copyMapper.userToUserInfo(userNew);
             String token = getToken(userInfo);
             BaseContext.setUserInfo(userInfo);
             return Result.success(new LoginInfo(token, userInfo));
         }
-        UserInfo userInfo = BeanUtil.copyProperties(user, UserInfo.class);
+        user.setLastLoginTime(LocalDateTime.now());
+        updateById(user);
+        UserInfo userInfo = copyMapper.userToUserInfo(user);
         String token = getToken(userInfo);
         BaseContext.setUserInfo(userInfo);
         return Result.success(new LoginInfo(token, userInfo));
@@ -113,21 +123,22 @@ public class LoginServiceImpl extends ServiceImpl<LoginMapper, User> implements 
     }
 
     /**
-     * 创建账户
+     * 创建普通用户账户
      *
      * @param username
      * @param password
      * @return
      */
     @Override
-    public Result createAccount(String username, String password, String userType, String isEnterpriseAuth) {
-        String hashPassword = BCrypt.hashpw(password);
+    public Result createAccount(String username, String password, String phone) {
+        User user = lambdaQuery().eq(User::getUsername, username).one();
+        if (Objects.nonNull(user)) {
+            return Result.error(MessageConstant.USER_NAME_EXISTS);
+        }
+        String hashPassword = BCrypt.hashpw(password, BCrypt.gensalt());
         boolean isSuccess = save(User.builder().username(username).
                 password(hashPassword).
-                userType(UserType.getByDesc(userType)).
-                isEnterpriseAuth(Integer.valueOf(isEnterpriseAuth)).
-                firstLoginTime(LocalDateTime.now()).
-                lastLoginTime(LocalDateTime.now()).
+                phone(phone).
                 build());
         if (!isSuccess) {
             return Result.error(MessageConstant.SQL_MESSAGE_SAVE_ERROR);

@@ -1,8 +1,9 @@
 package com.app.uni_app.service.impl;
 
-import cn.hutool.core.bean.BeanUtil;
+
 import com.app.uni_app.common.constant.MessageConstant;
 import com.app.uni_app.common.context.BaseContext;
+import com.app.uni_app.common.mapstruct.CopyMapper;
 import com.app.uni_app.common.result.Result;
 import com.app.uni_app.mapper.CartMapper;
 import com.app.uni_app.pojo.dto.CartDTO;
@@ -10,25 +11,16 @@ import com.app.uni_app.pojo.dto.CartProductDTO;
 import com.app.uni_app.pojo.entity.Cart;
 import com.app.uni_app.pojo.entity.CartItem;
 import com.app.uni_app.service.CartService;
-import com.baomidou.mybatisplus.core.conditions.AbstractLambdaWrapper;
-import com.baomidou.mybatisplus.core.conditions.AbstractWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import io.swagger.models.auth.In;
 import jakarta.annotation.Resource;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -36,8 +28,12 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, Cart> implements Ca
     @Resource
     private CartMapper cartMapper;
 
+    @Resource
+    private  CopyMapper copyMapper;
+
     private static final String DELETE_IDS = "deletedIds";
     private static final String SUCCESS_COUNT = "successCount";
+
 
     /**
      * 获取购物车列表
@@ -64,7 +60,7 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, Cart> implements Ca
         String productId = cartProductDTO.getProductId();
         String specId = cartProductDTO.getSpecId();
         CartItem cartItem = cartMapper.getCartItem(userId, productId, specId);
-        if (cartItem == null) {
+        if (Objects.isNull(cartItem)) {
             Cart cart = Cart.builder().userId(Long.valueOf(userId))
                     .productId(Long.valueOf(productId))
                     .specId(Long.valueOf(specId))
@@ -87,7 +83,7 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, Cart> implements Ca
     public Result clearCart() {
         String userId = BaseContext.getUserInfo().getId();
         List<Cart> removeCarts = lambdaQuery().eq(Cart::getUserId, userId).list();
-        if (removeCarts.isEmpty()) {
+        if (CollectionUtils.isEmpty(removeCarts)) {
             return Result.success(removeCarts);
         }
         List<Long> removeCartIds = removeCarts.stream().map(Cart::getId).toList();
@@ -110,8 +106,7 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, Cart> implements Ca
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Result deleteCartProduct(String productIds, String specIds) {
-        log.error("--------productIds"+productIds+";specIds:"+specIds+"----------");
-        if (productIds == null || specIds == null) {
+        if (StringUtils.isBlank(productIds) || StringUtils.isBlank(specIds)) {
             return Result.error(MessageConstant.DATA_ERROR);
         }
         String userId = BaseContext.getUserInfo().getId();
@@ -125,14 +120,15 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, Cart> implements Ca
         }
 
         LambdaQueryWrapper<Cart> lambdaQueryWrapper = new LambdaQueryWrapper<>();
-        for (int i = 0; i < productIdsList.size(); i++) {
+        int size = productIdsList.size();
+        for (int i = 0; i < size; i++) {
             String productId = productIdsList.get(i);
             String specId = specIdsList.get(i);
             lambdaQueryWrapper.or(wrapper ->
                     wrapper.eq(Cart::getUserId, userId).eq(Cart::getProductId, productId).eq(Cart::getSpecId, specId));
         }
         List<Cart> carts = list(lambdaQueryWrapper);
-        if (carts.isEmpty()) {
+        if (CollectionUtils.isEmpty(carts)) {
             return Result.error(MessageConstant.CART_NOT_EXIST_ERROR);
         }
         if (carts.size() != productIdsList.size()) {
@@ -159,11 +155,11 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, Cart> implements Ca
     @Transactional(rollbackFor = Exception.class)
     public Result mergeCart(CartDTO cartDTO) {
         List<CartProductDTO> carts = cartDTO.getCartItems();
-        if (carts.isEmpty()) {
+        if (CollectionUtils.isEmpty(carts)) {
             return Result.success();
         }
         String userId = BaseContext.getUserInfo().getId();
-        List<Cart> cartList = BeanUtil.copyToList(carts, Cart.class).stream()
+        List<Cart> cartList = carts.stream().map(cartProductDTO -> copyMapper.cartProductDTOToCart(cartProductDTO))
                 .peek(cart -> cart.setUserId(Long.valueOf(userId))).toList();
         remove(new LambdaQueryWrapper<Cart>().eq(Cart::getUserId, userId));
         saveBatch(cartList);

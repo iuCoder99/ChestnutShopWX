@@ -1,6 +1,6 @@
 package com.app.uni_app.service.impl;
 
-import cn.hutool.core.bean.BeanUtil;
+import com.app.uni_app.common.mapstruct.CopyMapper;
 import com.app.uni_app.common.result.Result;
 import com.app.uni_app.pojo.dto.BannerDTO;
 import com.app.uni_app.pojo.dto.BannerSortDTO;
@@ -21,6 +21,14 @@ import java.util.HashMap;
 @Service
 public class BannerServiceImpl extends ServiceImpl<BannerMapper, Banner>
         implements BannerService {
+
+    private CopyMapper copyMapper;
+
+    private static final String DELETE_ID = "deleteId";
+    private static final String BANNER_ID = "bannerId";
+    private static final String SORT = "sort";
+    private static final String STATUS = "status";
+
     /**
      * 获取首页轮播图列表
      *
@@ -42,7 +50,7 @@ public class BannerServiceImpl extends ServiceImpl<BannerMapper, Banner>
      */
     @Override
     public Result addBanner(BannerDTO bannerDTO) {
-        Banner banner = BeanUtil.copyProperties(bannerDTO, Banner.class);
+        Banner banner = copyMapper.bannerDTOToBanner(bannerDTO);
         save(banner);
         return Result.success(banner);
     }
@@ -55,7 +63,7 @@ public class BannerServiceImpl extends ServiceImpl<BannerMapper, Banner>
      */
     @Override
     public Result updateBanner(BannerDTO bannerDTO) {
-        Banner banner = BeanUtil.copyProperties(bannerDTO, Banner.class);
+        Banner banner = copyMapper.bannerDTOToBanner(bannerDTO);
         updateById(banner);
         return Result.success(banner);
     }
@@ -70,7 +78,7 @@ public class BannerServiceImpl extends ServiceImpl<BannerMapper, Banner>
     public Result deleteBanner(Long id) {
         removeById(id);
         HashMap<String, Object> resultMap = new HashMap<>(1);
-        resultMap.put("deletedId", id);
+        resultMap.put(DELETE_ID, id);
         return Result.success(resultMap);
     }
 
@@ -84,8 +92,8 @@ public class BannerServiceImpl extends ServiceImpl<BannerMapper, Banner>
     public Result updateSort(BannerSortDTO bannerSortDTO) {
         lambdaUpdate().set(Banner::getSort, bannerSortDTO.getSort()).eq(Banner::getId, bannerSortDTO.getId()).update();
         HashMap<String, Object> map = new HashMap<>(2);
-        map.put("bannerId", bannerSortDTO.getId());
-        map.put("sort", bannerSortDTO.getSort());
+        map.put(BANNER_ID, bannerSortDTO.getId());
+        map.put(SORT, bannerSortDTO.getSort());
         return Result.success(map);
     }
 
@@ -100,8 +108,8 @@ public class BannerServiceImpl extends ServiceImpl<BannerMapper, Banner>
         lambdaUpdate().set(Banner::getStatus, bannerStatusDTO.getStatus().getNumber())
                 .eq(Banner::getId, bannerStatusDTO.getId()).update();
         HashMap<String, Object> map = new HashMap<>(2);
-        map.put("bannerId", bannerStatusDTO.getId());
-        map.put("status", bannerStatusDTO.getStatus().getValue());
+        map.put(BANNER_ID, bannerStatusDTO.getId());
+        map.put(STATUS, bannerStatusDTO.getStatus().getValue());
         return Result.success(map);
     }
 }
