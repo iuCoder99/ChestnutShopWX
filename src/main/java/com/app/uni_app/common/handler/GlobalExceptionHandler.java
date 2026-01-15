@@ -33,11 +33,13 @@ public class GlobalExceptionHandler {
         if (message.contains("Duplicate entry")) {
             return Result.error(MessageConstant.USER_NAME_EXISTS);
         }
-        return Result.error(MessageConstant.UNKNOWN_ERROR);
+        log.error("globalExceptionHandler拦截到:" + ex.getClass() + ";异常信息:" + ex.getMessage());
+        return Result.error(MessageConstant.TOM_CAT_ERROR);
     }
 
     /**
-     *BCrypt 用户登录账户校验异常
+     * BCrypt 用户登录账户校验异常
+     *
      * @param ex
      * @return
      */
@@ -47,10 +49,24 @@ public class GlobalExceptionHandler {
         if (message.contains("Invalid salt version")) {
             return Result.error(MessageConstant.LOGIN_ERROR);
         }
-        return Result.error(MessageConstant.UNKNOWN_ERROR);
+        log.error("globalExceptionHandler拦截到:" + ex.getClass() + ";异常信息:" + ex.getMessage());
+        return Result.error(MessageConstant.TOM_CAT_ERROR);
     }
 
-
+/**
+    @ExceptionHandler({MethodArgumentNotValidException.class})
+    public Result MExceptionHandler(Exception ex) {
+        String message = ex.getMessage();
+        if (StringUtils.contains(message, "message")) {
+            //message [请输入正确的手机号格式]]
+            int start = StringUtils.lastIndexOf(message, "message") + 7 + 2;
+            //  请输入正确的手机号格式
+            String substring = StringUtils.substring(message, start, message.length() - 1 - 2);
+            return Result.error(substring);
+        }
+        return Result.error(MessageConstant.UNKNOWN_ERROR);
+    }
+**/
     /**
      * 捕获所有数据库保存数据相关异常
      *

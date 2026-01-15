@@ -9,6 +9,9 @@ server:
 #    key-alias: tomcat                     # 生成证书时的别名（默认是 tomcat）
 
 spring:
+  main:
+    # 开启 Spring循环依赖自动解决机制
+    allow-circular-references: true
   profiles:
     active: dev  # 激活开发环境配置
   application:
