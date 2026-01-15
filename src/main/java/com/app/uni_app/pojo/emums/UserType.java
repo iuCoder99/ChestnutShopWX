@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.Getter;
 
 /**
- * 用户类型枚举（个人/企业）
+ * 用户类型枚举（个人/店铺）
  */
 @Getter
 public enum UserType {
@@ -17,7 +17,7 @@ public enum UserType {
     /**
      * 企业用户
      */
-    ENTERPRISE("ENTERPRISE", "企业用户");
+    ENTERPRISE("SHOP", "店铺");
 
     /**
      * 数据库存储值（和数据库enum值一致）

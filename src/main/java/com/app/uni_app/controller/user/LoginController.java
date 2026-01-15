@@ -6,6 +6,8 @@ import com.app.uni_app.pojo.dto.UserDTO;
 import com.app.uni_app.pojo.dto.UserWechatDTO;
 import com.app.uni_app.service.LoginService;
 import jakarta.annotation.Resource;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -21,7 +23,7 @@ public class LoginController {
      * @return
      */
     @PostMapping("/login/account")
-    public Result loginByAccount(@RequestBody UserDTO userDTO) {
+    public Result loginByAccount(@RequestBody @NotNull UserDTO userDTO) {
 
         return loginService.loginByAccount(userDTO);
     }
@@ -32,7 +34,7 @@ public class LoginController {
      * @return
      */
     @PostMapping("/login/wechat")
-    public Result loginByWechat(@RequestBody UserWechatDTO userWechatDTO) {
+    public Result loginByWechat(@RequestBody @NotNull UserWechatDTO userWechatDTO) {
         return loginService.loginByWechat(userWechatDTO);
     }
 
@@ -65,11 +67,41 @@ public class LoginController {
      * @return
      */
     @PostMapping("/create/account")
-    public Result createAccount(@RequestParam String username
-            , @RequestParam String password
-            , @RequestParam String phone) {
+    public Result createAccount(@RequestParam @NotBlank String username
+            , @RequestParam @NotBlank String password
+            , @RequestParam @NotBlank String phone) {
         return loginService.createAccount(username, password, phone);
     }
 
+
+    /**
+     * 忘记密码
+     *
+     * @param username
+     * @param phone
+     * @param passwordNew
+     * @return
+     */
+    @PutMapping("/forget/password")
+    public Result forgetPassword(@RequestParam @NotBlank String username
+            , @RequestParam @NotBlank String phone
+            , @RequestParam @NotBlank String passwordNew) {
+        return loginService.forgetPassword(username, phone, passwordNew);
+    }
+
+
+    /**
+     * 修改密码
+     * @param username
+     * @param passwordOld
+     * @param passwordNew
+     * @return
+     */
+    @PutMapping("/change/password")
+    public Result changePassword(@RequestParam @NotBlank String username
+            , @RequestParam @NotBlank String passwordOld
+            , @RequestParam @NotBlank String passwordNew) {
+        return loginService.changePassword(username, passwordOld, passwordNew);
+    }
 
 }

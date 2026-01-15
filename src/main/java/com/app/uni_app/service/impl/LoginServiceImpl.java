@@ -27,6 +27,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+
 @Slf4j
 @Service
 public class LoginServiceImpl extends ServiceImpl<LoginMapper, User> implements LoginService {
@@ -89,7 +90,7 @@ public class LoginServiceImpl extends ServiceImpl<LoginMapper, User> implements 
         String code = userWechatDTO.getCode();
         JsonNode json = wechatLoginUtil.getWechatUserInfo(code);
         JsonNode jsonNode = json.get(OPEN_ID);
-        String openid= jsonNode==null? null:jsonNode.asText();
+        String openid = jsonNode == null ? null : jsonNode.asText();
         if (StringUtils.isBlank(openid)) {
             return Result.error(MessageConstant.GET_OPENID_ERROR);
         }
@@ -144,5 +145,57 @@ public class LoginServiceImpl extends ServiceImpl<LoginMapper, User> implements 
             return Result.error(MessageConstant.SQL_MESSAGE_SAVE_ERROR);
         }
         return Result.success();
+    }
+
+
+    /**
+     * 忘记密码(使用手机号校验)
+     *
+     * @param username
+     * @param phone
+     * @param passwordNew
+     * @return
+     */
+    @Override
+    public Result forgetPassword(String username, String phone, String passwordNew) {
+        User user = lambdaQuery().eq(User::getUsername, username).eq(User::getPhone, phone).one();
+        if (Objects.isNull(user)) {
+            return Result.error(MessageConstant.ACCOUNT_NOT_FOUND);
+        }
+        String hashPasswordNew = BCrypt.hashpw(passwordNew, BCrypt.gensalt());
+        user.setPassword(hashPasswordNew);
+        boolean isSuccess = updateById(user);
+        if (!isSuccess) {
+            return Result.error(MessageConstant.TOM_CAT_ERROR);
+        }
+        return Result.success(user.getId());
+    }
+
+
+    /**
+     * 修改密码
+     *
+     * @param username
+     * @param passwordOld
+     * @param passwordNew
+     * @return
+     */
+    @Override
+    public Result changePassword(String username, String passwordOld, String passwordNew) {
+        User user = lambdaQuery().eq(User::getUsername, username).one();
+        if (Objects.isNull(user)) {
+            return Result.error(MessageConstant.ACCOUNT_NOT_FOUND);
+        }
+        if (!BCrypt.checkpw(passwordOld, user.getPassword())){
+         return Result.error(MessageConstant.LOGIN_ERROR);
+        }
+        String hashPasswordNew = BCrypt.hashpw(passwordNew, BCrypt.gensalt());
+        user.setPassword(hashPasswordNew);
+        boolean isSuccess = updateById(user);
+        if (!isSuccess) {
+            return Result.error(MessageConstant.TOM_CAT_ERROR);
+        }
+        return Result.success(user.getId());
+
     }
 }

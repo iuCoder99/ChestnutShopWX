@@ -2,7 +2,6 @@ package com.app.uni_app.common.handler;
 
 
 import com.app.uni_app.common.constant.MessageConstant;
-import com.app.uni_app.common.context.BaseContext;
 import com.app.uni_app.common.result.Result;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
@@ -32,19 +31,29 @@ public class GlobalExceptionHandler {
         //Duplicate entry 'zhangsan' for key 'employee.idx_username'
         String message = ex.getMessage();
         if (message.contains("Duplicate entry")) {
-            String[] split = message.split(" ");
-            String username = split[9];
-            String msg = username + MessageConstant.ALREADY_EXISTS;
-            return Result.error(msg);
-        } else {
-            return Result.error(MessageConstant.UNKNOWN_ERROR);
+            return Result.error(MessageConstant.USER_NAME_EXISTS);
         }
+        return Result.error(MessageConstant.UNKNOWN_ERROR);
+    }
+
+    /**
+     *BCrypt 用户登录账户校验异常
+     * @param ex
+     * @return
+     */
+    @ExceptionHandler({IllegalArgumentException.class})
+    public Result IAEExceptionHandler(Exception ex) {
+        String message = ex.getMessage();
+        if (message.contains("Invalid salt version")) {
+            return Result.error(MessageConstant.LOGIN_ERROR);
+        }
+        return Result.error(MessageConstant.UNKNOWN_ERROR);
     }
 
 
-
     /**
-     *  捕获所有数据库保存数据相关异常
+     * 捕获所有数据库保存数据相关异常
+     *
      * @param e
      * @return
      */

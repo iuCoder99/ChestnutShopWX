@@ -24,6 +24,8 @@ public class WebMvcConfiguration extends WebMvcConfigurationSupport {
                 .addPathPatterns("/api/**")
                 .excludePathPatterns("/api/user/login/**")
                 .excludePathPatterns("/api/user/create/**")
+                .excludePathPatterns("/api/user/change/**")
+                .excludePathPatterns("/api/user/forget/**")
                 .excludePathPatterns("/api/banner/list")
                 .excludePathPatterns("/api/product/**")
                 .excludePathPatterns("/api/category/**")

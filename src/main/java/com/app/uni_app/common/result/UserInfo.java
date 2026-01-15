@@ -1,8 +1,7 @@
 package com.app.uni_app.common.result;
 
-import com.app.uni_app.pojo.emums.EnterpriseAuthStatus;
+import com.app.uni_app.pojo.emums.ShopAuthStatus;
 import com.app.uni_app.pojo.emums.UserType;
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -39,19 +38,19 @@ public class UserInfo {
     private String openid;
 
     /**
-     * 用户类型（枚举：PERSONAL/ENTERPRISE）
+     * 用户类型（枚举：PERSONAL/SHOP）
      */
     private UserType userType;
 
     /**
      * 企业认证状态
      */
-    private Integer isEnterpriseAuth;
+    private Integer isShopAuth;
 
     /**
      * 企业认证状态详情（枚举：unauth/authing/authsuccess/authfailed）
      */
-    private EnterpriseAuthStatus enterpriseAuthStatus;
+    private ShopAuthStatus shopAuthStatus;
 
 
 }

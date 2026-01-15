@@ -1,9 +1,10 @@
 package com.app.uni_app.pojo.emums;
+
 import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.Getter;
 
 @Getter
-public enum EnterpriseAuthStatus {
+public enum ShopAuthStatus {
     /**
      * 未认证
      */
@@ -26,7 +27,7 @@ public enum EnterpriseAuthStatus {
     private final String desc;
 
 
-    EnterpriseAuthStatus(Integer node, String desc) {
+    ShopAuthStatus(Integer node, String desc) {
         this.node = node;
         this.desc = desc;
     }
@@ -34,12 +35,12 @@ public enum EnterpriseAuthStatus {
     /**
      * 核心方法：根据数据库的 Integer 值，查找对应的枚举（用于查库后转换）
      */
-    public static EnterpriseAuthStatus getDesc(Integer code) {
+    public static ShopAuthStatus getDesc(Integer code) {
         // 防止 code 为 null（比如数据库字段没值），返回默认的未认证
         if (code == null) {
             return UN_AUTH;
         }
-        for (EnterpriseAuthStatus status : values()) {
+        for (ShopAuthStatus status : values()) {
             if (status.node.equals(code)) {
                 return status;
             }

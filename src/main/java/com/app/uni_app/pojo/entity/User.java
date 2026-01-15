@@ -1,6 +1,5 @@
 package com.app.uni_app.pojo.entity;
 
-import com.app.uni_app.pojo.emums.UserType;
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,7 +10,7 @@ import lombok.experimental.Accessors;
 import java.time.LocalDateTime;
 
 /**
- * 用户表（个人/企业用户）实体类
+ * 用户实体类
  *
  * @author auto-generated
  * @date 2025-12-26
@@ -63,35 +62,6 @@ public class User {
      */
     private String openid;
 
-    /**
-     * 用户类型（个人/企业）
-     */
-    @TableField(value = "user_type", fill = FieldFill.INSERT)
-    private UserType userType = UserType.PERSONAL;
-
-    /**
-     * 企业名称（企业用户）
-     */
-    private String enterpriseName;
-
-    /**
-     * 统一社会信用代码（企业用户，18位）
-     */
-    private String creditCode;
-
-    /**
-     * 营业执照图片URL（企业用户）
-     */
-    private String licenseUrl;
-
-    /**
-     * 企业认证状态（0-未认证，1-已认证，2-认证中，3-认证失败）
-     */
-    @TableField(value = "is_enterprise_auth", fill = FieldFill.INSERT)
-    private Integer isEnterpriseAuth = 0;
-
-    @TableField(exist = false)
-    private com.app.uni_app.pojo.emums.EnterpriseAuthStatus enterpriseAuthStatus;
 
     /**
      * 备注（管理员添加）
@@ -121,10 +91,6 @@ public class User {
     private LocalDateTime updateTime;
 
 
-    public com.app.uni_app.pojo.emums.EnterpriseAuthStatus getEnterpriseAuthStatus() {
-        // 调用你枚举中改名后的方法
-        return com.app.uni_app.pojo.emums.EnterpriseAuthStatus.getDesc(this.isEnterpriseAuth);
-    }
 
 
 }
