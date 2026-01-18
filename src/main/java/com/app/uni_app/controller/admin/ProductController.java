@@ -1,15 +1,9 @@
 package com.app.uni_app.controller.admin;
 
 import com.app.uni_app.common.result.Result;
-import com.app.uni_app.service.CategoryService;
 import com.app.uni_app.service.ProductService;
 import jakarta.annotation.Resource;
-import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api")
@@ -22,9 +16,19 @@ public class ProductController {
      *
      * @return
      */
-    @RequestMapping("/product/hot")
+    @GetMapping("/product/hot")
     public Result getHotProduct(@RequestParam(value = "limit", defaultValue = "10") Integer limit) {
         return productService.getHotProduct(limit);
+    }
+
+    /**
+     * 获取列表商品简单介绍
+     * @param productIds
+     * @return
+     */
+    @GetMapping("/product/brief/list")
+    public Result getBriefProduct(@RequestParam(value = "productIds", defaultValue = "") String productIds) {
+        return productService.getBriefProduct(productIds);
     }
 
     /**
@@ -33,8 +37,9 @@ public class ProductController {
      * @return
      */
     @GetMapping("/product/detail")
-    public Result getProductDetail(@RequestParam("productId") String productId) {
-        return productService.getProductDetail(productId);
+    public Result getProductDetail(@RequestParam("productId") String productId
+            , @RequestHeader(value = "X-User-Id", required = false) String userId) {
+        return productService.getProductDetail(productId, userId);
     }
 
     /**
@@ -61,11 +66,11 @@ public class ProductController {
     @GetMapping("/product/search")
     public Result searchProductList(@RequestParam(value = "pageNum", defaultValue = "1") Integer pageNum,
                                     @RequestParam(value = "pageSize", defaultValue = "10") Integer pageSize,
-                                    @RequestParam(value = "sortType", defaultValue = "default")  String sortType,
+                                    @RequestParam(value = "sortType", defaultValue = "default") String sortType,
                                     String firstCategoryId,
                                     String secondCategoryId,
                                     String keyword) {
-        return productService.searchProductList(pageNum, pageSize, firstCategoryId,secondCategoryId,sortType, keyword);
+        return productService.searchProductList(pageNum, pageSize, firstCategoryId, secondCategoryId, sortType, keyword);
     }
 
     /**
@@ -87,10 +92,9 @@ public class ProductController {
      * @return
      */
     @GetMapping("/product/spec/price")
-    public Result getProductSpecPrice(@RequestParam("productId") String productId,@RequestParam("specId") String specId) {
-        return productService.getProductSpecPrice(productId,specId);
+    public Result getProductSpecPrice(@RequestParam("productId") String productId, @RequestParam("specId") String specId) {
+        return productService.getProductSpecPrice(productId, specId);
     }
-
 
 
 }

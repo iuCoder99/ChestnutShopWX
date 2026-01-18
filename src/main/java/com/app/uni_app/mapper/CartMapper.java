@@ -7,14 +7,13 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
-import java.util.Map;
 
 @Mapper
 public interface CartMapper extends BaseMapper<Cart> {
 
     List<CartItem> getCartList(String userId);
 
-    CartItem getCartItem(String userId, String productId, String specId);
+    CartItem getCartItem(@Param("userId") String userId,@Param("productId") String productId,@Param("specId") String specId);
 
 
     void updateCartItemQuantity(String userId, String productId, String specId, Integer quantity);

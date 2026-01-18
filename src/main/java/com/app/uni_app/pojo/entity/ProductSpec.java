@@ -1,7 +1,10 @@
 package com.app.uni_app.pojo.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
+import org.springframework.format.annotation.DateTimeFormat;
+
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Date;
@@ -38,24 +41,6 @@ public class ProductSpec implements Serializable {
     private String specText;
 
     /**
-     * 尺寸
-     */
-    @TableField(value = "size")
-    private String size;
-
-    /**
-     * 颜色
-     */
-    @TableField(value = "color")
-    private String color;
-
-    /**
-     * 材质
-     */
-    @TableField(value = "material")
-    private String material;
-
-    /**
      * 规格单价
      */
     @TableField(value = "price")
@@ -76,12 +61,16 @@ public class ProductSpec implements Serializable {
     /**
      * 创建时间
      */
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @TableField(value = "create_time", fill = FieldFill.INSERT) // 插入时自动填充
     private Date createTime;
 
     /**
      * 更新时间
      */
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @TableField(value = "update_time", fill = FieldFill.INSERT_UPDATE) // 插入和更新时自动填充
     private Date updateTime;
 }

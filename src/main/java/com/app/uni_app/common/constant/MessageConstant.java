@@ -13,6 +13,7 @@ public class MessageConstant {
     public static final String SQL_MESSAGE_SAVE_ERROR = "数据保存失败，请稍后重试";
     public static final String TOM_CAT_ERROR = "系统繁忙，请稍后重试";
     public static final String CART_NOT_EXIST_ERROR = "删除的购物车不存在";
+    public static final String CONTENT_NOT_EXIST_ERROR = "删除的内容不存在";
     public static final String DELETE_ERROR = "删除失败,请重试";
     public static final String DATA_ERROR = "数据异常,请重试";
 

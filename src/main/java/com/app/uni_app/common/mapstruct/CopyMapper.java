@@ -4,11 +4,15 @@ import com.app.uni_app.common.result.UserInfo;
 import com.app.uni_app.pojo.dto.*;
 import com.app.uni_app.pojo.entity.*;
 import com.app.uni_app.pojo.vo.ProductSpecVO;
+import com.app.uni_app.pojo.vo.SimpleProductVO;
 import com.app.uni_app.pojo.vo.UserDetailVO;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.ReportingPolicy;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring",
+        unmappedTargetPolicy = ReportingPolicy.IGNORE, // 忽略字段不匹配警告
+        unmappedSourcePolicy = ReportingPolicy.IGNORE)  // 忽略源对象多余字段)
 public interface CopyMapper {
 
     UserInfo userToUserInfo(User user);
@@ -24,6 +28,10 @@ public interface CopyMapper {
     ProductSpecVO productSpecToProductSpecVO(ProductSpec productSpec);
 
     UserDetailVO userToUserDetailVO(User user);
-@Mapping(target = "id",expression = "java(addressDTO.getId().isBlank()? null:Long.valueOf(addressDTO.getId()))")
+
+    @Mapping(target = "id", expression = "java(addressDTO.getId().isBlank()? null:Long.valueOf(addressDTO.getId()))")
     Address addressDTOToAddress(AddressDTO addressDTO);
+
+    @Mapping(source = "id", target = "id")
+    SimpleProductVO productToSimpleProductVO(Product product);
 }

@@ -14,7 +14,7 @@ public interface ProductService extends IService<Product> {
 
     Result getHotProduct(Integer limit);
 
-    Result getProductDetail(String productId);
+    Result getProductDetail(String productId,String userId);
 
     Result getProductList(Integer pageNum, Integer pageSize, String categoryId);
 
@@ -23,5 +23,7 @@ public interface ProductService extends IService<Product> {
     Result getProductRelated(String productId, Integer limit);
 
     Result getProductSpecPrice(String productId, String specId);
+
+    Result getBriefProduct(String productIds);
 }
 

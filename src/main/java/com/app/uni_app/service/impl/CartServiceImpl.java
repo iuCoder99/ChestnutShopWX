@@ -29,7 +29,7 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, Cart> implements Ca
     private CartMapper cartMapper;
 
     @Resource
-    private  CopyMapper copyMapper;
+    private CopyMapper copyMapper;
 
     private static final String DELETE_IDS = "deletedIds";
     private static final String SUCCESS_COUNT = "successCount";
@@ -68,7 +68,9 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, Cart> implements Ca
             save(cart);
             return Result.success(cart.getId());
         }
-        cartMapper.updateCartItemQuantity(userId, productId, specId, cartProductDTO.getQuantity());
+        Integer quantityCartHave = cartItem.getQuantity();
+        quantityCartHave = cartProductDTO.getQuantity() + quantityCartHave;
+        cartMapper.updateCartItemQuantity(userId, productId, specId, quantityCartHave);
         return Result.success(cartItem.getId());
 
     }

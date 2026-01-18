@@ -38,9 +38,7 @@
     <select id="getCartItem" resultMap="CartItemResultMap">
         <include refid="selectCartItem_where_Sql"/>
         and p.id =#{productId}
-        <if test="specId!=null and specId !=''">
         and c.spec_id =#{specId}
-        </if>
     </select>
 
 
@@ -60,7 +58,7 @@
         c.update_time
         from cart c
         inner join product p on c.product_id = p.id
-        left join product_spec ps on p.id = ps.product_id
+        inner join product_spec ps on p.id = ps.product_id and c.spec_id=ps.id
         where c.user_id = #{userId}  <!--用where过滤用户，确保只返回该用户的购物车数据，userId不会为null -->
     </sql>
     <sql id="groupBySql">

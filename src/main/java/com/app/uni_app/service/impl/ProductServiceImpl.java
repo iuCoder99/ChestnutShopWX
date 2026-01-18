@@ -1,25 +1,29 @@
 package com.app.uni_app.service.impl;
 
 
+import com.app.uni_app.common.constant.MessageConstant;
 import com.app.uni_app.common.mapstruct.CopyMapper;
 import com.app.uni_app.common.result.PageResult;
 import com.app.uni_app.common.result.Result;
+import com.app.uni_app.mapper.ProductMapper;
 import com.app.uni_app.pojo.emums.ProductSortType;
 import com.app.uni_app.pojo.entity.Product;
 import com.app.uni_app.pojo.entity.ProductSpec;
 import com.app.uni_app.pojo.vo.ProductSpecVO;
+import com.app.uni_app.pojo.vo.SimpleProductVO;
+import com.app.uni_app.service.ProductService;
 import com.app.uni_app.service.ProductSpecService;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-
-import com.app.uni_app.service.ProductService;
-import com.app.uni_app.mapper.ProductMapper;
 import jakarta.annotation.Resource;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @author 20589
@@ -47,7 +51,28 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
     @Override
     public Result getHotProduct(Integer limit) {
         List<Product> hotProducts = productMapper.selectOrderByDescSalesCountLimit(limit);
-        return Result.success(hotProducts);
+        List<SimpleProductVO> simpleProductVOs = hotProducts.stream()
+                .map(hotProduct -> copyMapper.productToSimpleProductVO(hotProduct)).toList();
+        return Result.success(simpleProductVOs);
+    }
+
+    /**
+     * 获取列表商品简单介绍
+     *
+     * @param productIds
+     * @return
+     */
+    @Override
+    public Result getBriefProduct(String productIds) {
+        if (StringUtils.isBlank(productIds)) {
+            return Result.success(CollectionUtils.emptyCollection());
+        }
+        List<String> productIdsList = Arrays.stream(StringUtils.split(productIds, ",")).toList();
+        List<Product> list = productMapper.getBriefProduct(productIdsList);
+        List<SimpleProductVO> simpleProductVOS = list.stream()
+                .map(product -> copyMapper.productToSimpleProductVO(product)).toList();
+        return Result.success(simpleProductVOS);
+
     }
 
     /**
@@ -57,8 +82,20 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
      * @return
      */
     @Override
-    public Result getProductDetail(String productId) {
-        Product product = productMapper.selectByProductId(productId);
+    public Result getProductDetail(String productId, String userId) {
+        if (StringUtils.isBlank(productId)) {
+            return Result.error(MessageConstant.TOM_CAT_ERROR);
+        }
+        if (StringUtils.isBlank(userId)) {
+            userId = "-1";
+        }
+        Product product = productMapper.selectByProductId(productId, userId);
+        if (Objects.isNull(product)) {
+            return Result.error(MessageConstant.TOM_CAT_ERROR);
+        }
+        if (!StringUtils.equals(product.getIsCollection().toString(), "0")) {
+            product.setIsCollection(1L);
+        }
         return Result.success(product);
     }
 

@@ -7,7 +7,7 @@
         <id column="spec_id" property="id"/>
         <result column="spec_product_id" property="productId"/>
         <result column="spec_text" property="specText"/>
-        <result column="size" property="size"/>
+        <result column="spec_price" property="price"/>
         <result column="spec_enterprise_price" property="enterprisePrice"/>
         <result column="spec_stock" property="stock"/>
         <result column="spec_create_time" property="createTime"/>
@@ -17,7 +17,6 @@
     <resultMap id="ProductWithImageAndSpecResultMap" type="com.app.uni_app.pojo.entity.Product">
         <id column="product_id" property="id"/>
         <result column="category_id" property="categoryId"/>
-        <result column="brand_id" property="brandId"/>
         <result column="name" property="name"/>
         <result column="sell_point" property="sellPoint"/>
         <result column="product_price" property="price"/>
@@ -30,6 +29,7 @@
         <result column="status" property="status"/>
         <result column="create_time" property="createTime"/>
         <result column="update_time" property="updateTime"/>
+        <result column="is_Collection" property="isCollection"/>
 
         <collection property="imageUrls" ofType="java.lang.String">
             <result column="image_url"/>
@@ -40,22 +40,35 @@
         </collection>
     </resultMap>
 
+    <resultMap id="ProductResultMap" type="com.app.uni_app.pojo.entity.Product">
+        <id column="product_id" property="id"/>
+        <result column="category_id" property="categoryId"/>
+        <result column="name" property="name"/>
+        <result column="sell_point" property="sellPoint"/>
+        <result column="product_price" property="price"/>
+        <result column="enterprise_price" property="enterprisePrice"/>
+        <result column="stock" property="stock"/>
+        <result column="cover_image" property="image"/>
+        <result column="description" property="description"/>
+        <result column="view_count" property="viewCount"/>
+        <result column="sales_count" property="salesCount"/>
+        <result column="status" property="status"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
 
 
-    <select id="selectOrderByDescSalesCountLimit" resultMap="ProductWithImageAndSpecResultMap">
-        <include refid="selectAllProductWithImageAndSpec_Where_SQL"/>
+    <select id="selectOrderByDescSalesCountLimit" resultMap="ProductResultMap">
+        <include refid="selectSimpleAllProduct_Where_SQL"/>
         order by p.sales_count DESC
         limit #{limit}
     </select>
-    <select id="selectByProductId" resultMap="ProductWithImageAndSpecResultMap">
-        <include refid="selectAllProductWithImageAndSpec_Where_SQL"/>
-     and p.id=#{productId}
-    </select>
+
     <select id="selectByCategoryIdPage" resultMap="ProductWithImageAndSpecResultMap">
         <include refid="selectAllProductWithImageAndSpec_Where_SQL"/>
-<if test="categoryId!=null and categoryId != ''">
-        and p.category_id=#{categoryId}
-</if>
+        <if test="categoryId!=null and categoryId != ''">
+            and p.category_id=#{categoryId}
+        </if>
     </select>
     <select id="selectBySecondCategoryIdAndKeywordPage" resultMap="ProductWithImageAndSpecResultMap">
         <include refid="selectAllProductWithImageAndSpec_Where_SQL"/>
@@ -63,7 +76,7 @@
             and p.category_id=#{secondCategoryId}
         </if>
         <if test="keyword !=null and keyword !=''">
-            and p.name  LIKE CONCAT('%', #{keyword}, '%')
+            and p.name LIKE CONCAT('%', #{keyword}, '%')
         </if>
         order by ${dbValue}
     </select>
@@ -76,20 +89,111 @@
         limit #{limit}
     </select>
     <select id="selectByFirstCategoryIdAndKeywordPage" resultMap="ProductWithImageAndSpecResultMap">
-       <include refid="selectAllProductWithImageAndSpec_Where_SQL"/>
+        <include refid="selectAllProductWithImageAndSpec_Where_SQL"/>
         <if test="firstCategoryId !=null and firstCategoryId !=''">
             and p.category_id in (select id from category where parent_id =#{firstCategoryId})
         </if>
         <if test="keyword !=null and keyword !=''">
-            and p.name  LIKE CONCAT('%', #{keyword}, '%')
+            and p.name LIKE CONCAT('%', #{keyword}, '%')
         </if>
         order by ${dbValue}
     </select>
 
+    <select id="selectByProductId" resultMap="ProductWithImageAndSpecResultMap">
+        SELECT p.id                AS product_id,
+               p.category_id,
+               p.name,
+               p.sell_point,
+               p.price             AS product_price,
+               p.enterprise_price,
+               p.stock,
+               p.cover_image,
+               p.description,
+               p.view_count,
+               p.sales_count,
+               p.status,
+               p.create_time,
+               p.update_time,
+               pi.image_url,
+               pi.sort,
+               ps.id               AS spec_id,
+               ps.product_id       AS spec_product_id,
+               ps.spec_text,
+               ps.price            AS spec_price,
+               ps.enterprise_price AS spec_enterprise_price,
+               ps.stock            AS spec_stock,
+               ps.create_time      AS spec_create_time,
+               ps.update_time      AS spec_update_time,
+               IFNULL(c.id, 0)     AS is_Collection
+        FROM product p
+                 LEFT JOIN product_image pi ON p.id = pi.product_id
+                 LEFT JOIN product_spec ps ON p.id = ps.product_id
+                 LEFT JOIN collection c on p.id = c.product_id and c.user_id = #{userId}
+        where p.id = #{productId}
+          and p.status = 1
+    </select>
+    <select id="getBriefProduct" resultMap="ProductResultMap">
+        <include refid="selectSimpleAllProduct_Where_SQL"/>
+        and p.id in
+        <foreach collection="productIdsList" open="(" close=")" separator="," item="productId">
+            #{productId}
+        </foreach>
+    </select>
+
+
+    <sql id="selectSimpleAllProduct_Where_SQL">
+        SELECT p.id    AS product_id,
+               p.category_id,
+               p.name,
+               p.sell_point,
+               p.price AS product_price,
+               p.enterprise_price,
+               p.stock,
+               p.cover_image,
+               p.description,
+               p.view_count,
+               p.sales_count,
+               p.status,
+               p.create_time,
+               p.update_time
+        FROM product p
+
+        WHERE p.status = 1
+    </sql>
+
+
+    <sql id="selectAllProductWithImageAndSpec_Join_SQL">
+        SELECT p.id                AS product_id,
+               p.category_id,
+               p.name,
+               p.sell_point,
+               p.price             AS product_price,
+               p.enterprise_price,
+               p.stock,
+               p.cover_image,
+               p.description,
+               p.view_count,
+               p.sales_count,
+               p.status,
+               p.create_time,
+               p.update_time,
+               pi.image_url,
+               pi.sort,
+               ps.id               AS spec_id,
+               ps.product_id       AS spec_product_id,
+               ps.spec_text,
+               ps.price            AS spec_price,
+               ps.enterprise_price AS spec_enterprise_price,
+               ps.stock            AS spec_stock,
+               ps.create_time      AS spec_create_time,
+               ps.update_time      AS spec_update_time
+        FROM product p
+                 LEFT JOIN product_image pi ON p.id = pi.product_id
+                 LEFT JOIN product_spec ps ON p.id = ps.product_id
+    </sql>
     <sql id="selectAllProductWithImageAndSpec_Where_SQL">
         SELECT p.id                AS product_id,
                p.category_id,
-               p.brand_id,
                p.name,
                p.sell_point,
                p.price             AS product_price,
@@ -116,36 +220,6 @@
                  LEFT JOIN product_image pi ON p.id = pi.product_id
                  LEFT JOIN product_spec ps ON p.id = ps.product_id
         WHERE p.status = 1
-    </sql>
-    <sql id="selectAllProductWithImageAndSpec_Join_SQL">
-        SELECT p.id                AS product_id,
-               p.category_id,
-               p.brand_id,
-               p.name,
-               p.sell_point,
-               p.price             AS product_price,
-               p.enterprise_price,
-               p.stock,
-               p.cover_image,
-               p.description,
-               p.view_count,
-               p.sales_count,
-               p.status,
-               p.create_time,
-               p.update_time,
-               pi.image_url,
-               pi.sort,
-               ps.id               AS spec_id,
-               ps.product_id       AS spec_product_id,
-               ps.spec_text,
-               ps.price            AS spec_price,
-               ps.enterprise_price AS spec_enterprise_price,
-               ps.stock            AS spec_stock,
-               ps.create_time      AS spec_create_time,
-               ps.update_time      AS spec_update_time
-        FROM product p
-                 LEFT JOIN product_image pi ON p.id = pi.product_id
-                 LEFT JOIN product_spec ps ON p.id = ps.product_id
     </sql>
 
 </mapper>
