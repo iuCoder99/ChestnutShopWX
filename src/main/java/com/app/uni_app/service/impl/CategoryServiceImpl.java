@@ -152,6 +152,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
         map.put(Category.Fields.status, CommonStatus.getValueByNumber(Integer.valueOf(status)));
         return Result.success(map);
     }
+
 }
 
 

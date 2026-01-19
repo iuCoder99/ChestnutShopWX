@@ -23,4 +23,6 @@ public interface CategoryService extends IService<Category> {
     Result updateCategoryInfo(String id,CategoryDTO categoryDTO);
 
     Result updateCategoryStatus(String id, String status);
+
 }
+

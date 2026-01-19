@@ -12,6 +12,8 @@ spring:
   main:
     # 开启 Spring循环依赖自动解决机制
     allow-circular-references: true
+  session:
+    timeout: 3600s #session 1小时过期
   profiles:
     active: dev  # 激活开发环境配置
   application:

@@ -1,11 +1,14 @@
 package com.app.uni_app.service.impl;
 
 
+import com.app.uni_app.common.constant.DataConstant;
 import com.app.uni_app.common.constant.MessageConstant;
 import com.app.uni_app.common.mapstruct.CopyMapper;
 import com.app.uni_app.common.result.PageResult;
 import com.app.uni_app.common.result.Result;
+import com.app.uni_app.common.utils.SessionUtil;
 import com.app.uni_app.mapper.ProductMapper;
+import com.app.uni_app.pojo.emums.CommonStatus;
 import com.app.uni_app.pojo.emums.ProductSortType;
 import com.app.uni_app.pojo.entity.Product;
 import com.app.uni_app.pojo.entity.ProductSpec;
@@ -21,9 +24,9 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 
 /**
  * @author 20589
@@ -41,6 +44,12 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
 
     @Resource
     private CopyMapper copyMapper;
+
+    @Resource
+    private SessionUtil sessionUtil;
+
+    private static final String PRODUCT_LIST = "productList";
+    private static final String END_PRODUCT_ID = "endProductId";
 
     /**
      * 获取热门商品
@@ -168,8 +177,75 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         ProductSpecVO productSpecVO = copyMapper.productSpecToProductSpecVO(productSpec);
         return Result.success(productSpecVO);
     }
-}
 
+    /**
+     * 二级分类页面的商品列表滚动查询
+     *
+     * @param categoryId
+     * @param beginProductId
+     * @return
+     */
+    @Override
+    public Result getCategoryProductList(String categoryId, String beginProductId) {
+        List<Product> productList;
+        if (StringUtils.equals(beginProductId, Integer.toString(DataConstant.ZERO_INT))) {
+            productList = lambdaQuery().eq(Product::getCategoryId, categoryId)
+                    .eq(Product::getStatus, CommonStatus.ACTIVE.getNumber()).orderByDesc(Product::getId)
+                    .last("LIMIT " + DataConstant.SCROLL_QUERY_NUMBER).list();
+        } else {
+            productList = lambdaQuery().eq(Product::getCategoryId, categoryId)
+                    .eq(Product::getStatus, CommonStatus.ACTIVE.getNumber())
+                    .lt(Product::getId, beginProductId).orderByDesc(Product::getId)
+                    .last("LIMIT " + DataConstant.SCROLL_QUERY_NUMBER).list();
+        }
+        if (CollectionUtils.isEmpty(productList)) {
+            return Result.success();
+        }
+        List<SimpleProductVO> simpleProductVOs = productList.stream()
+                .map(product -> copyMapper.productToSimpleProductVO(product)).toList();
+        String endProductId = simpleProductVOs.get(simpleProductVOs.size() - 1).getId().toString();
+        HashMap<String, Object> resultMap = new HashMap<>(2);
+        resultMap.put(PRODUCT_LIST, simpleProductVOs);
+        resultMap.put(END_PRODUCT_ID, endProductId);
+        return Result.success(resultMap);
+    }
+
+    /**
+     * 滚动查询的商品列表
+     * @return
+     */
+    @Override
+    public Result getSimpleProductByScrollQuery() {
+        HashSet<Long> loadedIdSet = sessionUtil.getLoadedIdSet();
+        Long scrollLoadedEndId = sessionUtil.getScrollLoadedEndId();
+        if (scrollLoadedEndId.equals(DataConstant.ZERO_LONG)) {
+            Long maxIdInData = sessionUtil.getMaxIdInData();
+            if (Objects.isNull(maxIdInData)){
+                return Result.success(CollectionUtils.emptyCollection());
+            }
+            long bound = Math.round(maxIdInData * DataConstant.QUERY_SECURITY_NUMBER);
+            bound = Math.max(bound, 2);
+            scrollLoadedEndId = ThreadLocalRandom.current().nextLong(1, bound);
+        }
+        List<Product> productList = lambdaQuery().lt(Product::getId, scrollLoadedEndId).orderByDesc(Product::getId).last("LIMIT " + DataConstant.SCROLL_QUERY_NUMBER).list();
+        if (productList.isEmpty()) {
+            return Result.success(CollectionUtils.emptyCollection());
+        }
+        List<Product> products = productList.stream().filter(product -> !loadedIdSet.contains(product.getId())).toList();
+        scrollLoadedEndId = productList.get(productList.size() - DataConstant.ONE_INT).getId();
+        Set<Long> queryProductIds = products.stream().map(Product::getId).collect(Collectors.toSet());
+        loadedIdSet.addAll(queryProductIds);
+        sessionUtil.setLoadedIdSet(loadedIdSet);
+        sessionUtil.setScrollLoadedEndId(scrollLoadedEndId);
+        List<SimpleProductVO> simpleProductVOS = productList.stream().map(product -> copyMapper.productToSimpleProductVO(product)).collect(Collectors.toList());
+        Collections.shuffle(simpleProductVOS);
+        if (simpleProductVOS.size()<DataConstant.SCROLL_QUERY_NUMBER*DataConstant.QUERY_NOT_ENOUGH_NUMBER){
+            sessionUtil.removeLoadedIdSet();
+            sessionUtil.removeScrollLoadedEndId();
+        }
+        return Result.success(simpleProductVOS);
+    }
+}
 
 
 

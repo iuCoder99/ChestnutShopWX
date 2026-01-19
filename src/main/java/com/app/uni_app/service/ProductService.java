@@ -4,6 +4,7 @@ package com.app.uni_app.service;
 import com.app.uni_app.common.result.Result;
 import com.app.uni_app.pojo.entity.Product;
 import com.baomidou.mybatisplus.extension.service.IService;
+import jakarta.validation.constraints.NotBlank;
 
 /**
  * @author 20589
@@ -25,5 +26,9 @@ public interface ProductService extends IService<Product> {
     Result getProductSpecPrice(String productId, String specId);
 
     Result getBriefProduct(String productIds);
+
+    Result getCategoryProductList(@NotBlank String categoryId, String beginProductId);
+
+    Result getSimpleProductByScrollQuery();
 }
 

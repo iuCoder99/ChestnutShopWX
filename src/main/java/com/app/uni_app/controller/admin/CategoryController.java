@@ -2,18 +2,20 @@ package com.app.uni_app.controller.admin;
 
 import com.app.uni_app.common.result.Result;
 import com.app.uni_app.pojo.dto.CategoryDTO;
-import com.app.uni_app.service.CartService;
 import com.app.uni_app.service.CategoryService;
+import com.app.uni_app.service.ProductService;
 import jakarta.annotation.Resource;
+import jakarta.validation.constraints.NotBlank;
 import org.springframework.web.bind.annotation.*;
-
-import java.lang.ref.PhantomReference;
 
 @RestController
 @RequestMapping("/api")
 public class CategoryController {
     @Resource
     private CategoryService categoryService;
+
+    @Resource
+    private ProductService productService;
 
     /**
      * 获取分类树
@@ -65,8 +67,8 @@ public class CategoryController {
      * @return
      */
     @PutMapping("/admin/category/{id}")
-    public Result updateCategoryInfo(@PathVariable String id,@RequestBody CategoryDTO categoryDTO) {
-        return categoryService.updateCategoryInfo(id,categoryDTO);
+    public Result updateCategoryInfo(@PathVariable String id, @RequestBody CategoryDTO categoryDTO) {
+        return categoryService.updateCategoryInfo(id, categoryDTO);
     }
 
 
@@ -80,6 +82,18 @@ public class CategoryController {
     @PutMapping("/admin/category/{id}/status")
     public Result updateCategoryStatus(@PathVariable String id, @RequestParam String status) {
         return categoryService.updateCategoryStatus(id, status);
+    }
+
+
+    /**
+     * 查看二级分类下的商品列表
+     *
+     * @param categoryId
+     * @return
+     */
+    @GetMapping("/category/product/list/{categoryId}/{beginProductId}")
+    public Result getCategoryProductList(@PathVariable @NotBlank String categoryId, @PathVariable String beginProductId) {
+        return productService.getCategoryProductList(categoryId,beginProductId);
     }
 
 

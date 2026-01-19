@@ -23,6 +23,7 @@ public class ProductController {
 
     /**
      * 获取列表商品简单介绍
+     *
      * @param productIds
      * @return
      */
@@ -59,7 +60,6 @@ public class ProductController {
      *
      * @param pageNum
      * @param pageSize
-     * @param categoryId
      * @param keyword
      * @return
      */
@@ -94,6 +94,15 @@ public class ProductController {
     @GetMapping("/product/spec/price")
     public Result getProductSpecPrice(@RequestParam("productId") String productId, @RequestParam("specId") String specId) {
         return productService.getProductSpecPrice(productId, specId);
+    }
+
+    /**
+     * 滚动查询的商品列表
+     * @return
+     */
+    @GetMapping("/product/scroll/query/list")
+    public Result getSimpleProductByScrollQuery() {
+        return productService.getSimpleProductByScrollQuery();
     }
 
 
