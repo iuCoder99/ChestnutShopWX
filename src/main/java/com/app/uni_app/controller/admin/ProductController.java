@@ -1,15 +1,24 @@
 package com.app.uni_app.controller.admin;
 
 import com.app.uni_app.common.result.Result;
+import com.app.uni_app.pojo.entity.ProductSearchKeyword;
+import com.app.uni_app.service.ProductSearchKeywordService;
 import com.app.uni_app.service.ProductService;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
+@Slf4j
 @RestController
 @RequestMapping("/api")
 public class ProductController {
     @Resource
     private ProductService productService;
+
+    @Resource
+    private ProductSearchKeywordService productSearchKeywordService;
 
     /**
      * 获取热门商品
@@ -106,4 +115,32 @@ public class ProductController {
     }
 
 
+    /**
+     * 用户获取热门搜索关键词列表
+     * @return
+     */
+    @GetMapping("/product/user/keyword/list")
+    public Result getProductSearchKeywordListUser() {
+        return productSearchKeywordService.getProductSearchKeywordListUser();
+    }
+
+    /**
+     * 管理员获取搜索关键词列表
+     * @return
+     */
+    @GetMapping("/product/admin/keyword/list")
+    public Result getProductSearchKeywordListAdmin(){
+        return productSearchKeywordService.getProductSearchKeywordListAdmin();
+    }
+
+    /**
+     * 管理员修改搜索关键词
+     * @param productSearchKeywordList
+     * @return
+     */
+    @PutMapping("/product/admin/keyword/update")
+    public Result updateProductSearchListAdmin(@RequestBody List<ProductSearchKeyword> productSearchKeywordList){
+        return productSearchKeywordService.updateProductSearchListAdmin(productSearchKeywordList);
+
+    }
 }
