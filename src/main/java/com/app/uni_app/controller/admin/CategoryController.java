@@ -27,15 +27,6 @@ public class CategoryController {
         return categoryService.getCategoryTree();
     }
 
-    /**
-     * 获取分类树字节点
-     *
-     * @return
-     */
-    @GetMapping("/category/children/{categoryId}")
-    public Result getCategoryChildren(@PathVariable String categoryId) {
-        return categoryService.getCategoryChildren(categoryId);
-    }
 
     /**
      * 添加分类

@@ -1,6 +1,5 @@
 package com.app.uni_app.service.impl;
 
-import com.app.uni_app.common.constant.CaffeineConstant;
 import com.app.uni_app.common.result.Result;
 import com.app.uni_app.common.utils.CaffeineUtil;
 import com.app.uni_app.mapper.ProductSearchKeywordMapper;
@@ -29,7 +28,7 @@ public class ProductSearchKeywordServiceImpl extends ServiceImpl<ProductSearchKe
      */
     @Override
     public Result getProductSearchKeywordListUser() {
-        List<String> hotProductSearchKeyword = caffeineUtil.getHotProductSearchKeyword(CaffeineConstant.CACHE_KEY_HOT_PRODUCT_SEARCH_KEYWORD);
+        List<String> hotProductSearchKeyword = caffeineUtil.getHotProductSearchKeyword();
         Collections.shuffle(hotProductSearchKeyword);
         List<String> resultList = hotProductSearchKeyword.stream().limit(5).toList();
         return Result.success(resultList);

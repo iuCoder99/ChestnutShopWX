@@ -74,7 +74,7 @@ public class ProductController {
      */
     @GetMapping("/product/search")
     public Result searchProductList(@RequestParam(value = "pageNum", defaultValue = "1") Integer pageNum,
-                                    @RequestParam(value = "pageSize", defaultValue = "10") Integer pageSize,
+                                    @RequestParam(value = "pageSize", defaultValue = "80") Integer pageSize,
                                     @RequestParam(value = "sortType", defaultValue = "default") String sortType,
                                     String firstCategoryId,
                                     String secondCategoryId,
