@@ -48,6 +48,24 @@ mybatis-plus:
       logic-delete-field: is_deleted  # 逻辑删除字段（可选）
       logic-delete-value: 1           # 逻辑删除值
       logic-not-delete-value: 0       # 逻辑未删除值
+# SpringDoc 核心配置（阿里规范：配置项需注释，关键参数可配置）
+springdoc:
+  # 仅扫描Controller包，避免扫描非接口类
+  packages-to-scan: com.app.uni_app.controller
+  # 禁用默认接口（/actuator等），仅展示业务接口
+  default-flat-param-object: false
+  api-docs:
+    # 接口文档JSON路径（默认/v3/api-docs）
+    path: /v3/api-docs
+    # 生产环境通过profile禁用，此处仅兜底
+    enabled: ${springdoc.enabled:true}
+  swagger-ui:
+    # Swagger UI页面路径（默认/swagger-ui.html）
+    path: /swagger-ui.html
+    # 折叠标签
+    doc-expansion: none
+    # 显示请求时长
+    display-request-duration: true
 
 app:
   jwt:

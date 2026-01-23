@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
  * 基于 mybatis-plus 实现在实体类进行时间填充
  */
 @Configuration
-public class MyMetaObjectHandler implements MetaObjectHandler {
+public class MyMetaObjectHandlerConfig implements MetaObjectHandler {
 
     @Override
     public void insertFill(MetaObject metaObject) {

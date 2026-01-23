@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class MyBatisPlusConfiguration {
+public class MyBatisPlusConfig {
     // 分页插件
     @Bean
     public MybatisPlusInterceptor mybatisPlusInterceptor() {

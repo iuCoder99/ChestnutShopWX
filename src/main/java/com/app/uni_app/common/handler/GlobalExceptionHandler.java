@@ -3,12 +3,12 @@ package com.app.uni_app.common.handler;
 
 import com.app.uni_app.common.constant.MessageConstant;
 import com.app.uni_app.common.result.Result;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
-import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.sql.SQLException;
 import java.sql.SQLIntegrityConstraintViolationException;
@@ -20,6 +20,16 @@ import java.sql.SQLIntegrityConstraintViolationException;
 @Slf4j
 public class GlobalExceptionHandler {
     //TODO 业务异常处理...
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public void handleNoResourceFoundException(HttpServletRequest request, NoResourceFoundException e) {
+        // 判断是否是 favicon.ico 请求，是则不打印日志
+        if ("/favicon.ico".equals(request.getRequestURI())) {
+            return;
+        }
+        // 其他资源找不到的异常，正常打印日志
+        log.error("globalExceptionHandler拦截到:{};异常信息:{}", e.getClass(), e.getMessage(), e);
+    }
 
     /**
      * "用户名已存在"
@@ -52,18 +62,6 @@ public class GlobalExceptionHandler {
         }
         log.error("IAE ExceptionHandler拦截到:{};异常信息:{}", ex.getClass(), ex.getMessage());
         return Result.error(MessageConstant.TOM_CAT_ERROR);
-    }
-
-    /**
-     * 输入内容不合法
-     * @param ex
-     * @return
-     */
-    @ExceptionHandler({HandlerMethodValidationException.class, HttpMessageNotReadableException.class})
-    public Result HMVExceptionHandler(Exception ex) {
-        String message = ex.getMessage();
-        log.error("HMV ExceptionHandler拦截到:{};异常信息:{}", ex.getClass(), ex.getMessage());
-        return Result.error(MessageConstant.INPUT_DATA_ERROR);
     }
 
     /**

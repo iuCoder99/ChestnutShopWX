@@ -16,7 +16,7 @@ import org.springframework.context.annotation.Configuration;
 import java.util.List;
 
 @Configuration
-public class CaffeineConfiguration {
+public class CaffeineConfig {
 
     @Resource
     private ProductSearchKeywordServiceImpl productSearchKeywordServiceImpl;

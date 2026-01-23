@@ -9,7 +9,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurationSupp
 
 @Slf4j
 @Configuration
-public class WebMvcConfiguration extends WebMvcConfigurationSupport {
+public class WebMvcConfig extends WebMvcConfigurationSupport {
     @Resource
     private JwtTokenUserInterceptor jwtTokenUserInterceptor;
 
@@ -18,6 +18,7 @@ public class WebMvcConfiguration extends WebMvcConfigurationSupport {
      *
      * @param registry
      */
+    @Override
     protected void addInterceptors(InterceptorRegistry registry) {
         log.info("开始注册自定义拦截器...");
         registry.addInterceptor(jwtTokenUserInterceptor)
@@ -29,6 +30,12 @@ public class WebMvcConfiguration extends WebMvcConfigurationSupport {
                 .excludePathPatterns("/api/banner/list")
                 .excludePathPatterns("/api/product/**")
                 .excludePathPatterns("/api/category/**")
-                .excludePathPatterns("/api/notice/**");
+                .excludePathPatterns("/api/notice/**")
+
+                .excludePathPatterns("/swagger-ui/**") // Swagger UI 静态资源
+                .excludePathPatterns("/v3/api-docs/**") // 接口文档 JSON 数据
+                .excludePathPatterns("/swagger-ui.html");
     }
+
+
 }
