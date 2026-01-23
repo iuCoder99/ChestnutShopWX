@@ -38,7 +38,7 @@ public class AddressServiceImpl extends ServiceImpl<AddressMapper, Address> impl
      */
     @Override
     public Result getAddressList() {
-        String userId = BaseContext.getUserInfo().getId();
+        String userId = BaseContext.getUserId();
         List<Address> list = lambdaQuery().eq(Address::getUserId, userId).list();
         return Result.success(list);
     }
@@ -52,7 +52,7 @@ public class AddressServiceImpl extends ServiceImpl<AddressMapper, Address> impl
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Result insertAddress(AddressDTO addressDTO) {
-        String userId = BaseContext.getUserInfo().getId();
+        String userId = BaseContext.getUserId();
         Address address = copyMapper.addressDTOToAddress(addressDTO);
         address.setUserId(Long.valueOf(userId));
         addressServiceProxy.makeOnlyHaveOneDefault(addressDTO, userId);
@@ -99,7 +99,7 @@ public class AddressServiceImpl extends ServiceImpl<AddressMapper, Address> impl
     @Transactional(rollbackFor = Exception.class)
     @Override
     public Result updateAddress(AddressDTO addressDTO) {
-        String userId = BaseContext.getUserInfo().getId();
+        String userId = BaseContext.getUserId();
         Address address = copyMapper.addressDTOToAddress(addressDTO);
         addressServiceProxy.makeOnlyHaveOneDefault(addressDTO, userId);
         address.setUserId(Long.valueOf(userId));

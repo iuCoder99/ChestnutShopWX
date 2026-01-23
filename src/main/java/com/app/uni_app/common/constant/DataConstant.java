@@ -13,4 +13,5 @@ public class DataConstant {
     public static final long ZERO_LONG = 0L;
     public static final long ONE_LONG = 1L;
 
+
 }

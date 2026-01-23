@@ -1,14 +1,15 @@
 package com.app.uni_app.pojo.entity;
 
+import com.app.uni_app.common.constant.DatePatternConstants;
 import com.baomidou.mybatisplus.annotation.*;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 import lombok.experimental.FieldNameConstants;
 import org.springframework.format.annotation.DateTimeFormat;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -24,6 +25,7 @@ import java.util.List;
 @FieldNameConstants// 显式指定对应数据库表名
 public class Category implements Serializable {
 
+    @Serial
     private static final long serialVersionUID = 1L; // 序列化版本号，保证序列化兼容性
 
     /**
@@ -68,15 +70,15 @@ public class Category implements Serializable {
      * 创建时间
      */
     @TableField(fill = FieldFill.INSERT)
-    @DateTimeFormat(pattern = "yyyy-MM-dd hh:mm:ss")
-    @JsonFormat(pattern = "yyyy-MM-dd hh:mm:ss")
+    @DateTimeFormat(pattern = DatePatternConstants.DATE_TIME_FORM)
+    @JsonFormat(pattern = DatePatternConstants.DATE_TIME_FORM)
     private LocalDateTime createTime;
 
     /**
      * 更新时间
      */
     @TableField(fill = FieldFill.INSERT_UPDATE)
-    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @DateTimeFormat(pattern = DatePatternConstants.DATE_TIME_FORM)
+    @JsonFormat(pattern = DatePatternConstants.DATE_TIME_FORM)
     private LocalDateTime updateTime;
 }

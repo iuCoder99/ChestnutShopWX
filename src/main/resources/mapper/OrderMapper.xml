@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.app.uni_app.mapper.OrderMapper">
+    <resultMap id="OrderWithItemResultMap" type="com.app.uni_app.pojo.entity.Order">
+        <id column="order_id" property="id" jdbcType="BIGINT"/>
+        <result column="order_no" property="orderNo" jdbcType="VARCHAR"/>
+        <result column="user_id" property="userId" jdbcType="BIGINT"/>
+        <result column="address_id" property="addressId" jdbcType="BIGINT"/>
+        <result column="total_goods_amount" property="totalGoodsAmount" jdbcType="DECIMAL"/>
+        <result column="freight" property="freight" jdbcType="DECIMAL"/>
+        <result column="total_amount" property="totalAmount" jdbcType="DECIMAL"/>
+        <result column="status" property="status" jdbcType="INTEGER"
+                javaType="com.app.uni_app.pojo.emums.OrderStatusEnum"/>
+        <result column="pay_type" property="payType" jdbcType="INTEGER"
+                javaType="com.app.uni_app.pojo.emums.PayTypeEnum"/>
+        <result column="pay_time" property="payTime" jdbcType="TIMESTAMP"/>
+        <result column="deliver_time" property="deliverTime" jdbcType="TIMESTAMP"/>
+        <result column="receive_time" property="receiveTime" jdbcType="TIMESTAMP"/>
+        <result column="cancel_time" property="cancelTime" jdbcType="TIMESTAMP"/>
+        <result column="cancel_reason" property="cancelReason" jdbcType="VARCHAR"/>
+        <result column="remark" property="remark" jdbcType="VARCHAR"/>
+        <result column="logistics_company" property="logisticsCompany" jdbcType="VARCHAR"/>
+        <result column="logistics_no" property="logisticsNo" jdbcType="VARCHAR"/>
+        <result column="order_create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="order_update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+        <collection property="orderItems" javaType="java.util.List"
+                    ofType="com.app.uni_app.pojo.entity.OrderItem"
+                    resultMap="OrderItemResultMap"/>
+    </resultMap>
+
+    <resultMap id="OrderWithTrackingResultMap" type="com.app.uni_app.pojo.entity.Order">
+        <id column="order_id" property="id" jdbcType="BIGINT"/>
+        <result column="order_no" property="orderNo"/>
+        <result column="logistics_company" property="logisticsCompany"/>
+        <result column="logistics_no" property="logisticsNo"/>
+        <collection property="orderTrackings" javaType="List"
+                    resultMap="OrderTrackingResultMap"
+                    ofType="com.app.uni_app.pojo.entity.OrderTracking"
+                    fetchType="eager"/>
+    </resultMap>
+    <resultMap id="OrderItemResultMap" type="com.app.uni_app.pojo.entity.OrderItem">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="order_id" property="orderId" jdbcType="BIGINT"/>
+        <result column="product_id" property="productId" jdbcType="BIGINT"/>
+        <result column="spec_id" property="specId" jdbcType="BIGINT"/>
+        <result column="product_name" property="productName" jdbcType="VARCHAR"/>
+        <result column="spec_text" property="specText" jdbcType="VARCHAR"/>
+        <result column="product_image" property="productImage" jdbcType="VARCHAR"/>
+        <result column="price" property="price" jdbcType="DECIMAL"/>
+        <result column="quantity" property="quantity" jdbcType="INTEGER"/>
+        <result column="subtotal" property="subtotal" jdbcType="DECIMAL"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+
+    <resultMap id="OrderTrackingResultMap" type="com.app.uni_app.pojo.entity.OrderTracking">
+        <id column="id" property="id"/>
+        <result column="logistics_no" property="logisticsNo"/>
+        <result column="order_id" property="orderId"/>
+        <result column="location" property="location"/>
+        <result column="description" property="description"/>
+        <result column="create_time" property="createTime"/>
+    </resultMap>
+
+
+    <select id="getOrderList" resultMap="OrderWithItemResultMap">
+        <include refid="selectOrderWithOrderItem_JOIN_SQL"/>
+        where o.status=#{status}
+        and o.user_id=#{userId}
+        order by o.update_time DESC,
+        oi.create_time DESC
+    </select>
+    <select id="getOrderDesc" resultMap="OrderWithItemResultMap">
+        <include refid="selectOrderWithOrderItem_JOIN_SQL"/>
+        where o.order_no=#{orderNo}
+    </select>
+    <select id="getOrderLogistics" resultMap="OrderWithTrackingResultMap">
+        <include refid="selectOrderWithOrderTracking_JOIN_SQL"/>
+        where o.order_no = #{orderNo}
+        order by ot.create_time DESC
+    </select>
+
+    <sql id="selectOrderWithOrderItem_JOIN_SQL">
+        SELECT o.id          as order_id,
+               o.order_no,
+               o.user_id,
+               o.address_id,
+               o.total_goods_amount,
+               o.freight,
+               o.total_amount,
+               o.status,
+               o.pay_type,
+               o.pay_time,
+               o.deliver_time,
+               o.receive_time,
+               o.cancel_time,
+               o.cancel_reason,
+               o.remark,
+               o.logistics_company,
+               o.logistics_no,
+               o.create_time as order_create_time,
+               o.update_time as order_update_time,
+               oi.id,
+#              oi.order_id,
+               oi.product_id,
+               oi.spec_id,
+               oi.product_name,
+               oi.spec_text,
+               oi.product_image,
+               oi.price,
+               oi.quantity,
+               oi.subtotal,
+               oi.create_time
+        FROM `order` o
+                 LEFT JOIN order_item oi ON o.id = oi.order_id
+    </sql>
+    <sql id="selectOrderWithOrderTracking_JOIN_SQL">
+        select o.id as order_id,
+               o.order_no,
+               o.user_id,
+               o.address_id,
+               o.total_goods_amount,
+               o.freight,
+               o.total_amount,
+               o.status,
+               o.pay_type,
+               o.pay_time,
+               o.deliver_time,
+               o.receive_time,
+               o.cancel_time,
+               o.cancel_reason,
+               o.remark,
+               o.logistics_company,
+               o.logistics_no,
+               o.create_time as order_create_time,
+               o.update_time as order_update_time,
+               ot.id,
+#              ot.order_id,
+               ot.location,
+               ot.description,
+               ot.create_time
+        from `order` o
+                 LEFT JOIN order_tracking ot ON o.id = ot.order_id
+    </sql>
+
+</mapper>

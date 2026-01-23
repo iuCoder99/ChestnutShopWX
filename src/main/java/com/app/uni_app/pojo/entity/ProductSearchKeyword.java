@@ -1,5 +1,6 @@
 package com.app.uni_app.pojo.entity;
 
+import com.app.uni_app.common.constant.DatePatternConstants;
 import com.app.uni_app.pojo.emums.CommonStatus;
 import com.baomidou.mybatisplus.annotation.*;
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -49,15 +50,15 @@ public class ProductSearchKeyword implements Serializable {
      * 首次搜索时间【仅创建时赋值，永不修改】
      */
     @TableField(value = "create_time", fill = FieldFill.INSERT)
-    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @DateTimeFormat(pattern = DatePatternConstants.DATE_TIME_FORM)
+    @JsonFormat(pattern = DatePatternConstants.DATE_TIME_FORM)
     private LocalDateTime createTime;
 
     /**
      * 更新时间【创建+更新时自动赋值】
      */
     @TableField(value = "update_time", fill = FieldFill.INSERT_UPDATE)
-    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @DateTimeFormat(pattern = DatePatternConstants.DATE_TIME_FORM)
+    @JsonFormat(pattern = DatePatternConstants.DATE_TIME_FORM)
     private LocalDateTime updateTime;
 }

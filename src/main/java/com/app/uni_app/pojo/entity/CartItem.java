@@ -4,9 +4,9 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.util.Map;
 
 /**
  * 购物车商品类
@@ -14,6 +14,7 @@ import java.util.Map;
 @Data
 public class CartItem implements Serializable {
 
+    @Serial
     private static final long serialVersionUID = 1L;
     /**
      * 购物车 ID

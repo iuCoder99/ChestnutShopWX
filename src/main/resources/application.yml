@@ -28,6 +28,12 @@ spring:
     pathmatch:
       matching-strategy: ant_path_matcher
 
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 0
+
 # MyBatis-Plus公共配置
 mybatis-plus:
   mapper-locations: classpath:mapper/**/*.xml  # XML映射文件路径（可选）

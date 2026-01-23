@@ -26,7 +26,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      */
     @Override
     public Result getUserDetail() {
-        String userId = BaseContext.getUserInfo().getId();
+        String userId = BaseContext.getUserId();
         User user = lambdaQuery().eq(User::getId, userId).one();
         UserDetailVO userDetailVO = copyMapper.userToUserDetailVO(user);
         return Result.success(userDetailVO);
@@ -40,7 +40,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      */
     @Override
     public Result updateUserDetail(UserDetailDTO userDetailDTO) {
-        String userId = BaseContext.getUserInfo().getId();
+        String userId = BaseContext.getUserId();
         if (StringUtils.isBlank(userDetailDTO.getNickname())) {
             return Result.error(MessageConstant.USER_NAME_NOT_NULL);
         }

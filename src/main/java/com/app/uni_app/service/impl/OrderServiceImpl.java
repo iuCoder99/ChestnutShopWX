@@ -1,0 +1,193 @@
+package com.app.uni_app.service.impl;
+
+import com.app.uni_app.common.constant.MessageConstant;
+import com.app.uni_app.common.context.BaseContext;
+import com.app.uni_app.common.generator.SnowflakeIdGenerator;
+import com.app.uni_app.common.mapstruct.CopyMapper;
+import com.app.uni_app.common.result.PageResult;
+import com.app.uni_app.common.result.Result;
+import com.app.uni_app.common.utils.DateUtils;
+import com.app.uni_app.mapper.OrderMapper;
+import com.app.uni_app.pojo.dto.OrderDTO;
+import com.app.uni_app.pojo.dto.OrderItemDTO;
+import com.app.uni_app.pojo.emums.OrderStatusEnum;
+import com.app.uni_app.pojo.entity.Address;
+import com.app.uni_app.pojo.entity.Order;
+import com.app.uni_app.pojo.entity.OrderItem;
+import com.app.uni_app.pojo.vo.OrderWithItemVO;
+import com.app.uni_app.pojo.vo.OrderWithTrackingVO;
+import com.app.uni_app.service.AddressService;
+import com.app.uni_app.service.OrderItemService;
+import com.app.uni_app.service.OrderService;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import io.netty.util.internal.ThreadLocalRandom;
+import jakarta.annotation.Resource;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Objects;
+
+@Service
+public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements OrderService {
+
+    @Resource
+    private CopyMapper copyMapper;
+    @Resource
+    private SnowflakeIdGenerator snowflakeIdGenerator;
+    @Resource
+    private OrderItemService orderItemService;
+
+    @Resource
+    private OrderMapper orderMapper;
+
+    @Resource
+    private AddressService addressService;
+
+    private static final String PRODUCT_IDS = "productIds";
+
+    /**
+     * 创建订单
+     * @param orderDTO
+     * @return
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Result insertOrder(OrderDTO orderDTO) {
+        List<OrderItemDTO> orderItems = orderDTO.getOrderItems();
+        if (Objects.isNull(orderItems) || orderItems.isEmpty()) {
+            return Result.error(MessageConstant.DATA_ERROR);
+        }
+        Order order = copyMapper.orderDTOToOrder(orderDTO);
+        String userId = BaseContext.getUserId();
+        String orderNo = snowflakeIdGenerator.generateOrderNo();
+        save(order.setUserId(Long.valueOf(userId)).setOrderNo(orderNo));
+        List<OrderItem> orderItemList = orderItems.stream()
+                .map(orderItemDTO -> copyMapper.orderItemDTOToOrderItem(orderItemDTO))
+                .peek(orderItem -> orderItem.setOrderId(order.getId())).toList();
+        orderItemService.saveBatch(orderItemList);
+        OrderWithItemVO orderWithItemVO = copyMapper.orderToOrderWithItemVO(order);
+        return Result.success(orderWithItemVO);
+    }
+
+    /**
+     * 获取订单列表
+     * @param pageNum
+     * @param pageSize
+     * @param status
+     * @return
+     */
+    @Override
+    public Result getOrderList(Integer pageNum, Integer pageSize, String status) {
+        String userId = BaseContext.getUserId();
+        int code = OrderStatusEnum.getByValue(status).getCode();
+        IPage<Order> orderIPage = orderMapper.getOrderList(new Page<>(pageNum, pageSize), userId, code);
+        List<OrderWithItemVO> orderWithItemVOS = orderIPage.getRecords().stream()
+                .map(order -> copyMapper.orderToOrderWithItemVO(order)).toList();
+        return Result.success(PageResult.builder().list(orderWithItemVOS).total(orderIPage.getTotal())
+                .pageNum(pageNum).pageSize(pageSize).build());
+    }
+
+    /**
+     * 查看订单详情
+     * @param orderNo
+     * @return
+     */
+    @Override
+    public Result getOrderDesc(String orderNo) {
+        Order order = orderMapper.getOrderDesc(orderNo);
+        if (Objects.isNull(order)) {
+            return Result.error(MessageConstant.ORDER_NOT_FOUND);
+        }
+        OrderWithItemVO orderWithItemVO = copyMapper.orderToOrderWithItemVO(order);
+        return Result.success(orderWithItemVO);
+    }
+
+    /**
+     * 取消订单
+     * @param orderNo
+     * @return
+     */
+    @Override
+    public Result cancelOrder(String orderNo, String cancelReason) {
+        String userId = BaseContext.getUserId();
+        String now = DateUtils.formatLocalDateTime(LocalDateTime.now());
+        boolean isSuccess = lambdaUpdate().eq(Order::getUserId, userId).eq(Order::getOrderNo, orderNo)
+                .set(Order::getStatus, OrderStatusEnum.CANCELLED.getCode()).set(Order::getCancelTime, now)
+                .set(Order::getCancelReason, cancelReason).update();
+        if (!isSuccess) {
+            return Result.error(MessageConstant.SQL_MESSAGE_SAVE_ERROR);
+        }
+        HashMap<String, String> map = new HashMap<>(2);
+        map.put(Order.Fields.orderNo, orderNo);
+        map.put(Order.Fields.status, OrderStatusEnum.CANCELLED.getValue());
+        return Result.success(map);
+    }
+
+    /**
+     * 确定收货
+     * @param orderNo
+     * @return
+     */
+    @Override
+    public Result confirmOrderReceipt(String orderNo) {
+        String userId = BaseContext.getUserId();
+        String now = DateUtils.formatLocalDateTime(LocalDateTime.now());
+        boolean isSuccess = lambdaUpdate().eq(Order::getUserId, userId).eq(Order::getOrderNo, orderNo)
+                .set(Order::getStatus, OrderStatusEnum.COMPLETED.getCode()).set(Order::getReceiveTime, now).update();
+        if (!isSuccess) {
+            return Result.error(MessageConstant.SQL_MESSAGE_SAVE_ERROR);
+        }
+        HashMap<String, Object> map = new HashMap<>(3);
+        map.put(Order.Fields.orderNo, orderNo);
+        map.put(Order.Fields.status, OrderStatusEnum.COMPLETED.getValue());
+        map.put(Order.Fields.receiveTime, now);
+        return Result.success(map);
+    }
+
+    /**
+     * 计算运费
+     * @param productIds
+     * @param addressId
+     * @return
+     */
+    @Override
+    public Result getOrderFreight(String productIds, String addressId) {
+        String[] productIdsArray = StringUtils.split(productIds, ",");
+        Address address = addressService.getById(addressId);
+        if (Objects.isNull(address)){
+            return Result.error(MessageConstant.DATA_ERROR);
+        }
+        /*
+          TODO 计算运费相关逻辑 快递鸟API
+         */
+        BigDecimal originalFreight = BigDecimal.valueOf(productIdsArray.length * ThreadLocalRandom.current().nextDouble(3, 8));
+        double freight = originalFreight.setScale(2, RoundingMode.HALF_UP).doubleValue();
+        HashMap<String, Object> map = new HashMap<>(2);
+        map.put(Order.Fields.freight, freight);
+        map.put(PRODUCT_IDS, productIdsArray);
+        return Result.success(map);
+    }
+
+    /**
+     * 获取物流信息
+     * @param orderNo
+     * @return
+     */
+    @Override
+    public Result getOrderLogistics(String orderNo) {
+        Order order = orderMapper.getOrderLogistics(orderNo);
+        if (Objects.isNull(order)) {
+            return Result.error(MessageConstant.ORDER_NOT_FOUND);
+        }
+        OrderWithTrackingVO orderWithTrackingVO = copyMapper.orderToOrderWithTrackingVO(order);
+        return Result.success(orderWithTrackingVO);
+    }
+}

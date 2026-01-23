@@ -9,8 +9,8 @@ import java.time.LocalDateTime;
  * 首页轮播图表 实体类
  * 对应表：banner
  */
-@Data // Lombok 注解，自动生成 getter/setter/toString/equals/hashCode 等方法
-@TableName("banner") // 对应数据库表名（若实体类名与表名一致可省略）
+@Data
+@TableName("banner")
 public class Banner {
 
     /**

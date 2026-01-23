@@ -42,7 +42,7 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, Cart> implements Ca
      */
     @Override
     public Result getCartList() {
-        String userid = BaseContext.getUserInfo().getId();
+        String userid = BaseContext.getUserId();
         List<CartItem> cartList = cartMapper.getCartList(userid);
         return Result.success(cartList);
     }
@@ -56,7 +56,7 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, Cart> implements Ca
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Result addProductToCart(CartProductDTO cartProductDTO) {
-        String userId = BaseContext.getUserInfo().getId();
+        String userId = BaseContext.getUserId();
         String productId = cartProductDTO.getProductId();
         String specId = cartProductDTO.getSpecId();
         CartItem cartItem = cartMapper.getCartItem(userId, productId, specId);
@@ -83,7 +83,7 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, Cart> implements Ca
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Result clearCart() {
-        String userId = BaseContext.getUserInfo().getId();
+        String userId = BaseContext.getUserId();
         List<Cart> removeCarts = lambdaQuery().eq(Cart::getUserId, userId).list();
         if (CollectionUtils.isEmpty(removeCarts)) {
             return Result.success(removeCarts);
@@ -111,7 +111,7 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, Cart> implements Ca
         if (StringUtils.isBlank(productIds) || StringUtils.isBlank(specIds)) {
             return Result.error(MessageConstant.DATA_ERROR);
         }
-        String userId = BaseContext.getUserInfo().getId();
+        String userId = BaseContext.getUserId();
         List<String> productIdsList = Arrays.stream(productIds.split(",")).toList();
         List<String> specIdsList = Arrays.stream(specIds.split(",")).toList();
         if (productIdsList.isEmpty() && specIdsList.isEmpty()) {
@@ -160,7 +160,7 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, Cart> implements Ca
         if (CollectionUtils.isEmpty(carts)) {
             return Result.success();
         }
-        String userId = BaseContext.getUserInfo().getId();
+        String userId = BaseContext.getUserId();
         List<Cart> cartList = carts.stream().map(cartProductDTO -> copyMapper.cartProductDTOToCart(cartProductDTO))
                 .peek(cart -> cart.setUserId(Long.valueOf(userId))).toList();
         remove(new LambdaQueryWrapper<Cart>().eq(Cart::getUserId, userId));

@@ -1,6 +1,8 @@
 package com.app.uni_app.pojo.vo;
 
+import com.app.uni_app.common.constant.DatePatternConstants;
 import com.app.uni_app.pojo.emums.CommonStatus;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -47,15 +49,9 @@ public class ProductVO {
      */
     private CommonStatus status;
 
-    /**
-     * 创建时间
-     * 格式：date-time（yyyy-MM-dd HH:mm:ss 等标准时间格式）
-     */
+    @JsonFormat(pattern = DatePatternConstants.DATE_TIME_FORM)
     private LocalDateTime createTime;
 
-    /**
-     * 更新时间
-     * 格式：date-time（yyyy-MM-dd HH:mm:ss 等标准时间格式）
-     */
+    @JsonFormat(pattern = DatePatternConstants.DATE_TIME_FORM)
     private LocalDateTime updateTime;
 }

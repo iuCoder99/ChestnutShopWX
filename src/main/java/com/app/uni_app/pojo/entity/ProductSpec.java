@@ -1,10 +1,12 @@
 package com.app.uni_app.pojo.entity;
 
+import com.app.uni_app.common.constant.DatePatternConstants;
 import com.baomidou.mybatisplus.annotation.*;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Date;
@@ -20,6 +22,7 @@ import java.util.Date;
 @TableName(value = "product_spec")
 public class ProductSpec implements Serializable {
 
+    @Serial
     private static final long serialVersionUID = 1L;
 
     /**
@@ -61,16 +64,16 @@ public class ProductSpec implements Serializable {
     /**
      * 创建时间
      */
-    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @DateTimeFormat(pattern = DatePatternConstants.DATE_TIME_FORM)
+    @JsonFormat(pattern = DatePatternConstants.DATE_TIME_FORM)
     @TableField(value = "create_time", fill = FieldFill.INSERT) // 插入时自动填充
     private Date createTime;
 
     /**
      * 更新时间
      */
-    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @DateTimeFormat(pattern = DatePatternConstants.DATE_TIME_FORM)
+    @JsonFormat(pattern = DatePatternConstants.DATE_TIME_FORM)
     @TableField(value = "update_time", fill = FieldFill.INSERT_UPDATE) // 插入和更新时自动填充
     private Date updateTime;
 }

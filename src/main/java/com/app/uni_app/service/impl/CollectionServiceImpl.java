@@ -29,7 +29,7 @@ public class CollectionServiceImpl extends ServiceImpl<CollectionMapper, Product
         if (StringUtils.isBlank(productId)) {
             return Result.error(MessageConstant.TOM_CAT_ERROR);
         }
-        String userId = BaseContext.getUserInfo().getId();
+        String userId = BaseContext.getUserId();
         ProductCollection productCollection = new ProductCollection();
         productCollection.setUserId(Long.valueOf(userId)).setProductId(Long.valueOf(productId));
         boolean isSuccess = save(productCollection);
@@ -49,7 +49,7 @@ public class CollectionServiceImpl extends ServiceImpl<CollectionMapper, Product
         if (StringUtils.isBlank(productIds)) {
             return Result.error(MessageConstant.CONTENT_NOT_EXIST_ERROR);
         }
-        String userId = BaseContext.getUserInfo().getId();
+        String userId = BaseContext.getUserId();
         List<String> productIdList = Arrays.stream(StringUtils.split(productIds, ",")).toList();
         LambdaQueryWrapper<ProductCollection> lambdaQueryWrapper = new LambdaQueryWrapper<ProductCollection>().eq(ProductCollection::getUserId, userId).in(ProductCollection::getProductId, productIdList);
         boolean isSuccess = remove(lambdaQueryWrapper);
@@ -67,7 +67,7 @@ public class CollectionServiceImpl extends ServiceImpl<CollectionMapper, Product
      */
     @Override
     public Result getCollectionList(Integer pageNum, Integer pageSize) {
-        String userId = BaseContext.getUserInfo().getId();
+        String userId = BaseContext.getUserId();
         Page<ProductCollection> page = lambdaQuery().eq(ProductCollection::getUserId, userId).page(new Page<>(pageNum, pageSize));
         return Result.success(PageResult.builder().list(page.getRecords()).pageSize(pageSize).pageNum(pageNum).total(page.getTotal()).build());
     }

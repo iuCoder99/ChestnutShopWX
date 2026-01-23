@@ -5,8 +5,10 @@ import com.app.uni_app.common.constant.MessageConstant;
 import com.app.uni_app.common.result.Result;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 
 import java.sql.SQLException;
 import java.sql.SQLIntegrityConstraintViolationException;
@@ -20,20 +22,19 @@ public class GlobalExceptionHandler {
     //TODO 业务异常处理...
 
     /**
-     * 处理SQL异常
      * "用户名已存在"
      *
      * @param ex
      * @return
      */
     @ExceptionHandler({DuplicateKeyException.class, SQLIntegrityConstraintViolationException.class})
-    public Result exceptionHandler(Exception ex) {
+    public Result DKExceptionHandler(Exception ex) {
         //Duplicate entry 'zhangsan' for key 'employee.idx_username'
         String message = ex.getMessage();
         if (message.contains("Duplicate entry")) {
             return Result.error(MessageConstant.USER_NAME_EXISTS);
         }
-        log.error("globalExceptionHandler拦截到:" + ex.getClass() + ";异常信息:" + ex.getMessage());
+        log.error("DK ExceptionHandler拦截到:{};异常信息:{}", ex.getClass(), ex.getMessage());
         return Result.error(MessageConstant.TOM_CAT_ERROR);
     }
 
@@ -49,34 +50,33 @@ public class GlobalExceptionHandler {
         if (message.contains("Invalid salt version")) {
             return Result.error(MessageConstant.LOGIN_ERROR);
         }
-        log.error("globalExceptionHandler拦截到:" + ex.getClass() + ";异常信息:" + ex.getMessage());
+        log.error("IAE ExceptionHandler拦截到:{};异常信息:{}", ex.getClass(), ex.getMessage());
         return Result.error(MessageConstant.TOM_CAT_ERROR);
     }
 
-/**
-    @ExceptionHandler({MethodArgumentNotValidException.class})
-    public Result MExceptionHandler(Exception ex) {
+    /**
+     * 输入内容不合法
+     * @param ex
+     * @return
+     */
+    @ExceptionHandler({HandlerMethodValidationException.class, HttpMessageNotReadableException.class})
+    public Result HMVExceptionHandler(Exception ex) {
         String message = ex.getMessage();
-        if (StringUtils.contains(message, "message")) {
-            //message [请输入正确的手机号格式]]
-            int start = StringUtils.lastIndexOf(message, "message") + 7 + 2;
-            //  请输入正确的手机号格式
-            String substring = StringUtils.substring(message, start, message.length() - 1 - 2);
-            return Result.error(substring);
-        }
-        return Result.error(MessageConstant.UNKNOWN_ERROR);
+        log.error("HMV ExceptionHandler拦截到:{};异常信息:{}", ex.getClass(), ex.getMessage());
+        return Result.error(MessageConstant.INPUT_DATA_ERROR);
     }
-**/
+
     /**
      * 捕获所有数据库保存数据相关异常
      *
-     * @param e
+     * @param ex
      * @return
      */
     @ExceptionHandler({SQLException.class})
-    public Result<?> handleDbException(Exception e) {
-        log.error("数据库操作失败", e);
-        return Result.error(MessageConstant.SQL_MESSAGE_SAVE_ERROR); // 统一返回失败
+    public Result<?> SQLExceptionHandler(Exception ex) {
+        log.error("数据库操作失败", ex);
+        log.error(" SQL ExceptionHandler拦截到:{};异常信息:{}", ex.getClass(), ex.getMessage());
+        return Result.error(MessageConstant.SQL_MESSAGE_SAVE_ERROR);
     }
 
     /**
@@ -88,8 +88,8 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler
     public Result globalExceptionHandler(Exception e) {
-        log.error("完整异常栈:",e);
-        log.error("globalExceptionHandler拦截到:" + e.getClass() + ";异常信息:" + e.getMessage());
+        log.error("完整异常栈:", e);
+        log.error("globalExceptionHandler拦截到:{};异常信息:{}", e.getClass(), e.getMessage());
         return Result.error(MessageConstant.TOM_CAT_ERROR);
     }
 }

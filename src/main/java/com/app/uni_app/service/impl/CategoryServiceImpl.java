@@ -5,7 +5,7 @@ import com.app.uni_app.common.constant.DataConstant;
 import com.app.uni_app.common.constant.MessageConstant;
 import com.app.uni_app.common.mapstruct.CopyMapper;
 import com.app.uni_app.common.result.Result;
-import com.app.uni_app.common.utils.CaffeineUtil;
+import com.app.uni_app.common.utils.CaffeineUtils;
 import com.app.uni_app.mapper.CategoryMapper;
 import com.app.uni_app.pojo.dto.CategoryDTO;
 import com.app.uni_app.pojo.emums.CommonStatus;
@@ -35,7 +35,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
     private CopyMapper copyMapper;
 
     @Resource
-    private CaffeineUtil caffeineUtil;
+    private CaffeineUtils caffeineUtils;
     /**
      * 获取分类树
      *
@@ -44,7 +44,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
     @Override
     public Result getCategoryTree() {
         //返回分类树缓存
-        List<Category> rootCategories = caffeineUtil.getCategoryTree();
+        List<Category> rootCategories = caffeineUtils.getCategoryTree();
         return Result.success(rootCategories);
     }
 
@@ -92,7 +92,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
      */
     @Override
     public Result getCategoryChildren(String categoryId) {
-        List<Category> categoryTree = caffeineUtil.getCategoryTree();
+        List<Category> categoryTree = caffeineUtils.getCategoryTree();
         List<Category> list = categoryTree.stream().filter(category -> StringUtils.equals(categoryId, category.getId().toString())).toList();
         if (list.isEmpty()||list.size()>DataConstant.ONE_INT){
             return Result.error(MessageConstant.DATA_ERROR);
@@ -114,7 +114,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
         if (!isSuccess) {
             return Result.error(MessageConstant.SQL_MESSAGE_SAVE_ERROR);
         }
-        caffeineUtil.invalidateCategoryTree();
+        caffeineUtils.invalidateCategoryTree();
         return getCategoryChildren(category.getId().toString());
 
     }
@@ -131,7 +131,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
         if (!isSuccess) {
             return Result.error(MessageConstant.DELETE_ERROR);
         }
-        caffeineUtil.invalidateCategoryTree();
+        caffeineUtils.invalidateCategoryTree();
         return Result.success();
     }
 
@@ -150,7 +150,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
         if (!isSuccess) {
             return Result.error(MessageConstant.SQL_MESSAGE_SAVE_ERROR);
         }
-        caffeineUtil.invalidateCategoryTree();
+        caffeineUtils.invalidateCategoryTree();
         return Result.success(category);
     }
 
@@ -170,7 +170,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
         Map<String, Object> map = new HashMap<>(2);
         map.put(Category.Fields.id, id);
         map.put(Category.Fields.status, CommonStatus.getValueByNumber(Integer.valueOf(status)));
-        caffeineUtil.invalidateCategoryTree();
+        caffeineUtils.invalidateCategoryTree();
         return Result.success(map);
     }
 

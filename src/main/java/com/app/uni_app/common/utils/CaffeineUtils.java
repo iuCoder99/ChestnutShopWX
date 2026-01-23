@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 @Component
-public class CaffeineUtil {
+public class CaffeineUtils {
 
     @Resource
     private LoadingCache<String, List<String>> hotProductSearchKeywordCache;

@@ -1,7 +1,7 @@
 package com.app.uni_app.service.impl;
 
 import com.app.uni_app.common.result.Result;
-import com.app.uni_app.common.utils.CaffeineUtil;
+import com.app.uni_app.common.utils.CaffeineUtils;
 import com.app.uni_app.mapper.ProductSearchKeywordMapper;
 import com.app.uni_app.pojo.emums.CommonStatus;
 import com.app.uni_app.pojo.entity.ProductSearchKeyword;
@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 @Service
 public class ProductSearchKeywordServiceImpl extends ServiceImpl<ProductSearchKeywordMapper, ProductSearchKeyword> implements ProductSearchKeywordService {
     @Resource
-    private CaffeineUtil caffeineUtil;
+    private CaffeineUtils caffeineUtils;
 
     /**
      * 用户获取热门搜索关键词列表
@@ -28,7 +28,7 @@ public class ProductSearchKeywordServiceImpl extends ServiceImpl<ProductSearchKe
      */
     @Override
     public Result getProductSearchKeywordListUser() {
-        List<String> hotProductSearchKeyword = caffeineUtil.getHotProductSearchKeyword();
+        List<String> hotProductSearchKeyword = caffeineUtils.getHotProductSearchKeyword();
         Collections.shuffle(hotProductSearchKeyword);
         List<String> resultList = hotProductSearchKeyword.stream().limit(5).toList();
         return Result.success(resultList);
@@ -64,7 +64,7 @@ public class ProductSearchKeywordServiceImpl extends ServiceImpl<ProductSearchKe
     public Result updateProductSearchListAdmin(List<ProductSearchKeyword> productSearchKeywordList) {
         remove(new LambdaQueryWrapper<>());
         saveBatch(productSearchKeywordList);
-        caffeineUtil.invalidateHotProductSearchKeywordCache();
+        caffeineUtils.invalidateHotProductSearchKeywordCache();
         return Result.success();
     }
 }

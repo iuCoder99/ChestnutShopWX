@@ -4,44 +4,48 @@ import com.app.uni_app.common.constant.DatePatternConstants;
 import com.baomidou.mybatisplus.annotation.*;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
-import lombok.experimental.Accessors;
 import org.springframework.format.annotation.DateTimeFormat;
 
-import java.io.Serial;
-import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
- * 商品收藏表 实体类
- * @TableName collection
+ * 订单物流跟踪表 实体类
+ * 对应表：order_tracking
  */
 @Data
-@TableName(value = "collection")
-@Accessors(chain = true)
-public class ProductCollection implements Serializable {
+@TableName("order_tracking")
+public class OrderTracking {
 
-    @Serial
-    private static final long serialVersionUID = 1L;
     /**
-     * 收藏ID（主键）
+     * 物流跟踪 id(主键)
      */
     @TableId(type = IdType.AUTO)
     private Long id;
 
     /**
-     * 关联用户ID（外键）
+     * 物流单号
      */
-    @TableField(value = "user_id")
-    private Long userId;
+    private String logisticsNo;
+
 
     /**
-     * 关联商品ID（外键）
+     * 关联订单 id
      */
-    @TableField(value = "product_id")
-    private Long productId;
+    private String orderId;
 
     /**
-     * 收藏时间
+     * 所在地点
+     */
+    private String location;
+
+    /**
+     * 描述信息
+     */
+    private String description;
+
+
+    /**
+     * 创建时间(跟踪时间)
      */
     @TableField(value = "create_time", fill = FieldFill.INSERT)
     @DateTimeFormat(pattern = DatePatternConstants.DATE_TIME_FORM)

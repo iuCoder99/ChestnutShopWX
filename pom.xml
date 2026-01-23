@@ -83,6 +83,17 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- Redis 依赖 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+        <!-- Lettuce 客户端依赖 -->
+        <dependency>
+            <groupId>io.lettuce</groupId>
+            <artifactId>lettuce-core</artifactId>
+        </dependency>
+
         <!-- Lombok 核心依赖 配置正确✅ -->
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -153,7 +164,7 @@
             <version>0.4</version>
         </dependency>
 
-        <!-- ✅ 修正：只保留MapStruct核心包，processor已移至注解处理器路径中 -->
+        <!--  -->
         <dependency>
             <groupId>org.mapstruct</groupId>
             <artifactId>mapstruct</artifactId>
