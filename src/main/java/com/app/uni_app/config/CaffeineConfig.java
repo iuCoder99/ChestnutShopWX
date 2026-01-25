@@ -4,6 +4,7 @@ import com.app.uni_app.common.constant.CaffeineConstant;
 import com.app.uni_app.pojo.entity.Category;
 import com.app.uni_app.service.impl.CategoryServiceImpl;
 import com.app.uni_app.service.impl.ProductSearchKeywordServiceImpl;
+import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
@@ -22,11 +23,11 @@ public class CaffeineConfig {
     private ProductSearchKeywordServiceImpl productSearchKeywordServiceImpl;
 
     @Resource
-    private CategoryServiceImpl categoryServiceImpl;;
+    private CategoryServiceImpl categoryServiceImpl;
+    ;
 
     /**
      * 商品搜索关键词缓存
-     * @return
      */
     @Bean
     public LoadingCache<String, List<String>> hotProductSearchKeywordCache() {
@@ -48,7 +49,6 @@ public class CaffeineConfig {
 
     /**
      *分类树(一级分类,二级分类)缓存
-     * @return
      */
     @Bean
     public LoadingCache<String, List<Category>> categoryTreeCache() {
@@ -64,5 +64,17 @@ public class CaffeineConfig {
                         throw new IllegalArgumentException(CaffeineConstant.CACHE_KEY_NOT_VALID_ERROR);
                     }
                 });
+    }
+
+    /**
+     * 数据库商品最大 id
+     */
+    @Bean
+    public Cache<String, Long> MaxProductIdInDataCache() {
+        return Caffeine.newBuilder()
+                .initialCapacity(1)
+                .maximumSize(1)
+                .build();
+
     }
 }

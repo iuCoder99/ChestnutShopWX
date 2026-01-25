@@ -2,6 +2,7 @@ package com.app.uni_app.service;
 
 import com.app.uni_app.common.result.Result;
 import com.app.uni_app.pojo.dto.OrderDTO;
+import com.app.uni_app.pojo.dto.ScrollQueryDTO;
 import com.app.uni_app.pojo.entity.Order;
 import com.baomidou.mybatisplus.extension.service.IService;
 import jakarta.validation.constraints.NotBlank;
@@ -21,4 +22,10 @@ public interface OrderService extends IService<Order> {
     Result getOrderFreight(@NotBlank String productIds, @NotBlank String addressId);
 
     Result getOrderLogistics(@NotBlank String orderNo);
+
+    Result getOrderByScrollQuery(ScrollQueryDTO scrollQueryDTO);
+
+    Result searchOrderByCondition(@NotBlank String SearchCondition);
+
+    Result getOrderListByPage(@NotBlank String pageName);
 }

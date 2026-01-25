@@ -1,6 +1,7 @@
 package com.app.uni_app.pojo.entity;
 
 import com.app.uni_app.common.constant.DatePatternConstants;
+import com.app.uni_app.pojo.emums.CommonStatus;
 import com.app.uni_app.pojo.emums.OrderStatusEnum;
 import com.app.uni_app.pojo.emums.PayTypeEnum;
 import com.baomidou.mybatisplus.annotation.*;
@@ -107,6 +108,16 @@ public class Order {
      * 订单备注（用户填写，可为空）
      */
     private String remark;
+
+    /**
+     * 是否评价
+     */
+    private CommonStatus is_evaluate;
+
+    /**
+     * 是否删除
+     */
+    private CommonStatus is_deleted;
 
     /**
      * 快递公司（可为空）

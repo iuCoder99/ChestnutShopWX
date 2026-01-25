@@ -1,4 +1,4 @@
-package com.app.uni_app.common.utils;
+package com.app.uni_app.common.util;
 
 import com.app.uni_app.common.constant.DatePatternConstants;
 

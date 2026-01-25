@@ -66,11 +66,21 @@
 
     <select id="getOrderList" resultMap="OrderWithItemResultMap">
         <include refid="selectOrderWithOrderItem_JOIN_SQL"/>
-        where o.status=#{status}
+        where o.is_deleted = 0
+        and o.status=#{status}
         and o.user_id=#{userId}
         order by o.update_time DESC,
         oi.create_time DESC
     </select>
+
+    <select id="getUserAllOrder" resultMap="OrderWithItemResultMap">
+        <include refid="selectOrderWithOrderItem_JOIN_SQL"/>
+        where o.is_deleted = 0
+        and o.user_id=#{userId}
+        order by o.update_time DESC,
+        oi.create_time DESC
+    </select>
+
     <select id="getOrderDesc" resultMap="OrderWithItemResultMap">
         <include refid="selectOrderWithOrderItem_JOIN_SQL"/>
         where o.order_no=#{orderNo}
@@ -80,6 +90,25 @@
         where o.order_no = #{orderNo}
         order by ot.create_time DESC
     </select>
+    <select id="searchOrderByCondition" resultMap="OrderWithItemResultMap">
+        <include refid="selectOrderWithOrderItem_JOIN_SQL"/>
+        <where>
+            o.is_deleted = 0
+            and o.user_id=#{userId}
+            <if test="orderNo != null and orderNo != ''">
+                and o.order_no=#{orderNo}
+            </if>
+            <if test="logisticsNo != null and logisticsNo != ''">
+                and o.logistics_no=#{logisticsNo}
+            </if>
+            <if test="productName != null and productName != ''">
+                and oi.product_name like CONCAT('%',#{productName},'%')
+            </if>
+        </where>
+
+    </select>
+
+
 
     <sql id="selectOrderWithOrderItem_JOIN_SQL">
         SELECT o.id          as order_id,

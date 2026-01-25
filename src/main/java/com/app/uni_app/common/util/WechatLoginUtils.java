@@ -1,4 +1,4 @@
-package com.app.uni_app.common.utils;
+package com.app.uni_app.common.util;
 
 import com.app.uni_app.properties.WeChatProperties;
 import jakarta.annotation.Resource;
@@ -8,7 +8,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Component
-public class WechatLoginUtil {
+public class WechatLoginUtils {
 
     @Resource
     private WeChatProperties weChatProperties;

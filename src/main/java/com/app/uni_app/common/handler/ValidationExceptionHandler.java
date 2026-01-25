@@ -10,7 +10,9 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -54,5 +56,18 @@ public class ValidationExceptionHandler {
         String message = Objects.requireNonNull(e.getBindingResult().getFieldError()).getDefaultMessage();
         log.warn("参数绑定失败：{}", message, e);
         return Result.error(400, message);
+    }
+
+    /**
+     * 校验 notBlank...
+     * @param e
+     * @return
+     */
+    @ExceptionHandler(HandlerMethodValidationException.class)
+    public Result handleMethodValidationException(HandlerMethodValidationException e) {
+        String message = Arrays.toString(e.getDetailMessageArguments());
+        String warnMessage = "输入参数不合法: " + message;
+        log.warn(warnMessage);
+        return Result.error(400, warnMessage);
     }
 }

@@ -2,6 +2,7 @@ package com.app.uni_app.controller.admin;
 
 import com.app.uni_app.common.result.Result;
 import com.app.uni_app.pojo.dto.OrderDTO;
+import com.app.uni_app.pojo.dto.ScrollQueryDTO;
 import com.app.uni_app.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -43,6 +44,18 @@ public class OrderController {
             , @RequestParam(defaultValue = "pendingPayment") String status) {
         return orderService.getOrderList(pageNum, pageSize, status);
     }
+
+    /**
+     * 查询指定页面订单列表
+     * @param pageName
+     * @return
+     */
+    @GetMapping("/page/list")
+    @Operation(summary = "查询指定页面订单列表 ", description = "传入指定页面名,查询出订单列表")
+    public Result getOrderListByPage(@RequestParam @NotBlank String pageName) {
+        return orderService.getOrderListByPage(pageName);
+    }
+
 
     /**
      * 查看订单详情
@@ -98,6 +111,28 @@ public class OrderController {
     @Operation(summary = "查询物流信息", description = "根据订单编号获取订单对应的物流跟踪信息")
     public Result getOrderLogistics(@RequestParam @NotBlank String orderNo) {
         return orderService.getOrderLogistics(orderNo);
+    }
+
+    /**
+     * 滚动分页查询订单(全部页面)
+     * @param scrollQueryDTO
+     * @return
+     */
+    @GetMapping("/scroll/query/list")
+    @Operation(summary = "滚动查询订单列表", description = "滚动查询用户所有订单,一次四十条数据")
+    public Result getOrderByScrollQuery(@RequestBody @NotNull ScrollQueryDTO scrollQueryDTO) {
+        return orderService.getOrderByScrollQuery(scrollQueryDTO);
+    }
+
+    /**
+     * 条件搜索订单,一个字符串后端判断类型
+     * @param searchCondition
+     * @return
+     */
+    @GetMapping("/search")
+    @Operation(summary = "条件搜索订单", description = "商品名/订单号/快递单号  进行条件搜索")
+    public Result searchOrderByCondition(@RequestParam @NotBlank String searchCondition) {
+        return orderService.searchOrderByCondition(searchCondition);
     }
 
 }

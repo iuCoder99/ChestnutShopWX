@@ -1,6 +1,7 @@
 package com.app.uni_app.common.result;
 
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,24 +17,22 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class PageResult {
-
+    @Schema(name = "分页封装列表")
     List<?> list;
-    /**
-     * 总商品数
-     */
+
+    @Schema(name = "封装总数量")
     Long total;
-    /**
-     * 当前页码
-     */
+
+    @Schema(name = "当前页码,默认值:1")
     Integer pageNum = 1;
-    /**
-     * 每页数量
-     */
+
+    @Schema(name = "每页数量,默认值:10")
     Integer pageSize = 10;
+
     /**
-     * 总页数
      * 自动计算,无需传入
      */
+    @Schema(name = "总页数")
     Long totalPages;
 
 

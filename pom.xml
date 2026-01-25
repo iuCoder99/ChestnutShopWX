@@ -37,6 +37,12 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
+        <!-- Spring Boot 3.x AOP  starter（自带 AspectJ 支持，无需额外依赖） -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-aop</artifactId>
+        </dependency>
+
         <!-- JSR380 标准校验框架 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

@@ -1,15 +1,23 @@
 package com.app.uni_app.service.impl;
 
+import com.app.uni_app.aop.annotation.RemoveOrderSessionAnnotation;
+import com.app.uni_app.common.constant.DataConstant;
 import com.app.uni_app.common.constant.MessageConstant;
+import com.app.uni_app.common.constant.RegexConstants;
 import com.app.uni_app.common.context.BaseContext;
 import com.app.uni_app.common.generator.SnowflakeIdGenerator;
 import com.app.uni_app.common.mapstruct.CopyMapper;
 import com.app.uni_app.common.result.PageResult;
 import com.app.uni_app.common.result.Result;
-import com.app.uni_app.common.utils.DateUtils;
+import com.app.uni_app.common.result.ScrollQueryResult;
+import com.app.uni_app.common.util.DateUtils;
+import com.app.uni_app.common.util.SessionUtils;
 import com.app.uni_app.mapper.OrderMapper;
 import com.app.uni_app.pojo.dto.OrderDTO;
 import com.app.uni_app.pojo.dto.OrderItemDTO;
+import com.app.uni_app.pojo.dto.ScrollQueryDTO;
+import com.app.uni_app.pojo.emums.CommonStatus;
+import com.app.uni_app.pojo.emums.OrderPageEnum;
 import com.app.uni_app.pojo.emums.OrderStatusEnum;
 import com.app.uni_app.pojo.entity.Address;
 import com.app.uni_app.pojo.entity.Order;
@@ -51,7 +59,11 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     @Resource
     private AddressService addressService;
 
+    @Resource
+    private SessionUtils sessionUtils;
+
     private static final String PRODUCT_IDS = "productIds";
+
 
     /**
      * 创建订单
@@ -60,6 +72,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
+    @RemoveOrderSessionAnnotation
     public Result insertOrder(OrderDTO orderDTO) {
         List<OrderItemDTO> orderItems = orderDTO.getOrderItems();
         if (Objects.isNull(orderItems) || orderItems.isEmpty()) {
@@ -78,12 +91,13 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     }
 
     /**
-     * 获取订单列表
+     * 获取订单列表(分页)
      * @param pageNum
      * @param pageSize
      * @param status
      * @return
      */
+
     @Override
     public Result getOrderList(Integer pageNum, Integer pageSize, String status) {
         String userId = BaseContext.getUserId();
@@ -94,6 +108,31 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         return Result.success(PageResult.builder().list(orderWithItemVOS).total(orderIPage.getTotal())
                 .pageNum(pageNum).pageSize(pageSize).build());
     }
+
+    /**
+     * 查询指定页面订单列表
+     * 查询后存入session,进行复用,一致性基于自定义注解
+     * @param pageName
+     * @return
+     */
+    @Override
+    public Result getOrderListByPage(String pageName) {
+        String userId = BaseContext.getUserId();
+        OrderPageEnum orderPageEnum = OrderPageEnum.getByPageKey(pageName);
+        List<Order> userAllOrder = sessionUtils.getUserAllOrder(orderMapper::getUserAllOrder, userId);
+        if (userAllOrder.isEmpty()) {
+            return Result.success();
+        }
+        if (orderPageEnum.equals(OrderPageEnum.ALL)){
+            List<OrderWithItemVO> orderWithItemVOs = userAllOrder.stream().map(order -> copyMapper.orderToOrderWithItemVO(order)).toList();
+            return Result.success(orderWithItemVOs);
+        }
+        List<Order> list = userAllOrder.stream().filter(order -> order.getStatus().getPageCode() == orderPageEnum.getPageCode())
+                .toList();
+        List<OrderWithItemVO> orderWithItemVOs = list.stream().map(order -> copyMapper.orderToOrderWithItemVO(order)).toList();
+        return Result.success(orderWithItemVOs);
+    }
+
 
     /**
      * 查看订单详情
@@ -116,6 +155,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
      * @return
      */
     @Override
+    @RemoveOrderSessionAnnotation
     public Result cancelOrder(String orderNo, String cancelReason) {
         String userId = BaseContext.getUserId();
         String now = DateUtils.formatLocalDateTime(LocalDateTime.now());
@@ -137,6 +177,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
      * @return
      */
     @Override
+    @RemoveOrderSessionAnnotation
     public Result confirmOrderReceipt(String orderNo) {
         String userId = BaseContext.getUserId();
         String now = DateUtils.formatLocalDateTime(LocalDateTime.now());
@@ -162,7 +203,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     public Result getOrderFreight(String productIds, String addressId) {
         String[] productIdsArray = StringUtils.split(productIds, ",");
         Address address = addressService.getById(addressId);
-        if (Objects.isNull(address)){
+        if (Objects.isNull(address)) {
             return Result.error(MessageConstant.DATA_ERROR);
         }
         /*
@@ -189,5 +230,61 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         }
         OrderWithTrackingVO orderWithTrackingVO = copyMapper.orderToOrderWithTrackingVO(order);
         return Result.success(orderWithTrackingVO);
+    }
+
+    /**
+     * 滚动游标查询订单
+     * @return
+     */
+    @Override
+    public Result getOrderByScrollQuery(ScrollQueryDTO scrollQueryDTO) {
+        String userId = BaseContext.getUserId();
+        List<Order> list;
+        Long beginId = scrollQueryDTO.getBeginId();
+        if (Objects.isNull(beginId)) {
+            list = lambdaQuery().eq(Order::getUserId, userId).orderByDesc(Order::getCreateTime)
+                    .eq(Order::getIs_deleted, CommonStatus.INACTIVE.getNumber())
+                    .last("LIMIT " + DataConstant.COMMON_SCROLL_QUERY_NUMBER)
+                    .list();
+        } else {
+            list = lambdaQuery().eq(Order::getUserId, userId).orderByDesc(Order::getCreateTime).lt(Order::getId, beginId)
+                    .eq(Order::getIs_deleted, CommonStatus.INACTIVE.getNumber())
+                    .last("LIMIT " + DataConstant.COMMON_SCROLL_QUERY_NUMBER)
+                    .list();
+        }
+        if (list.isEmpty()) {
+            return Result.success(ScrollQueryResult.builder().list(list).endId(beginId));
+        }
+        Long endId = list.get(list.size() - 1).getId();
+        return Result.success(ScrollQueryResult.builder().list(list).endId(endId).build());
+
+    }
+
+    /**
+     * 条件搜索订单
+     * @param searchCondition
+     * @return
+     */
+    @Override
+    public Result searchOrderByCondition(String searchCondition) {
+        String userId = BaseContext.getUserId();
+        String orderNo = null;
+        String logisticsNo = null;
+        String productName = null;
+        if (RegexConstants.isOrderNo(searchCondition)) {
+            orderNo = searchCondition;
+        } else if (RegexConstants.isLogisticsNo(searchCondition)) {
+            logisticsNo = searchCondition;
+        } else {
+            productName = searchCondition;
+
+        }
+        List<Order> orderList = orderMapper.searchOrderByCondition(orderNo, logisticsNo, productName, userId);
+        if (orderList.isEmpty()) {
+            return Result.success();
+
+        }
+        List<OrderWithItemVO> orderWithItemVOs = orderList.stream().map(order -> copyMapper.orderToOrderWithItemVO(order)).toList();
+        return Result.success(orderWithItemVOs);
     }
 }

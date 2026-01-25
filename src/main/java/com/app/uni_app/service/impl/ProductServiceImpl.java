@@ -6,7 +6,7 @@ import com.app.uni_app.common.constant.MessageConstant;
 import com.app.uni_app.common.mapstruct.CopyMapper;
 import com.app.uni_app.common.result.PageResult;
 import com.app.uni_app.common.result.Result;
-import com.app.uni_app.common.utils.SessionUtil;
+import com.app.uni_app.common.util.SessionUtils;
 import com.app.uni_app.mapper.ProductMapper;
 import com.app.uni_app.pojo.emums.CommonStatus;
 import com.app.uni_app.pojo.emums.ProductSortType;
@@ -46,7 +46,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
     private CopyMapper copyMapper;
 
     @Resource
-    private SessionUtil sessionUtil;
+    private SessionUtils sessionUtils;
 
     private static final String PRODUCT_LIST = "productList";
     private static final String END_PRODUCT_ID = "endProductId";
@@ -191,12 +191,12 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         if (StringUtils.equals(beginProductId, Integer.toString(DataConstant.ZERO_INT))) {
             productList = lambdaQuery().eq(Product::getCategoryId, categoryId)
                     .eq(Product::getStatus, CommonStatus.ACTIVE.getNumber()).orderByDesc(Product::getId)
-                    .last("LIMIT " + DataConstant.SCROLL_QUERY_NUMBER).list();
+                    .last("LIMIT " + DataConstant.PRODUCT_SCROLL_QUERY_NUMBER).list();
         } else {
             productList = lambdaQuery().eq(Product::getCategoryId, categoryId)
                     .eq(Product::getStatus, CommonStatus.ACTIVE.getNumber())
                     .lt(Product::getId, beginProductId).orderByDesc(Product::getId)
-                    .last("LIMIT " + DataConstant.SCROLL_QUERY_NUMBER).list();
+                    .last("LIMIT " + DataConstant.PRODUCT_SCROLL_QUERY_NUMBER).list();
         }
         if (CollectionUtils.isEmpty(productList)) {
             return Result.success();
@@ -216,10 +216,10 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
      */
     @Override
     public Result getSimpleProductByScrollQuery() {
-        HashSet<Long> loadedIdSet = sessionUtil.getLoadedIdSet();
-        Long scrollLoadedEndId = sessionUtil.getScrollLoadedEndId();
+        HashSet<Long> loadedIdSet = sessionUtils.getLoadedIdSet();
+        Long scrollLoadedEndId = sessionUtils.getScrollLoadedEndId();
         if (scrollLoadedEndId.equals(DataConstant.ZERO_LONG)) {
-            Long maxIdInData = sessionUtil.getMaxIdInData();
+            Long maxIdInData = sessionUtils.getMaxIdInData();
             if (Objects.isNull(maxIdInData)){
                 return Result.success(CollectionUtils.emptyCollection());
             }
@@ -227,7 +227,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
             bound = Math.max(bound, 2);
             scrollLoadedEndId = ThreadLocalRandom.current().nextLong(1, bound);
         }
-        List<Product> productList = lambdaQuery().lt(Product::getId, scrollLoadedEndId).orderByDesc(Product::getId).last("LIMIT " + DataConstant.SCROLL_QUERY_NUMBER).list();
+        List<Product> productList = lambdaQuery().lt(Product::getId, scrollLoadedEndId).orderByDesc(Product::getId).last("LIMIT " + DataConstant.PRODUCT_SCROLL_QUERY_NUMBER).list();
         if (productList.isEmpty()) {
             return Result.success(CollectionUtils.emptyCollection());
         }
@@ -235,13 +235,13 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         scrollLoadedEndId = productList.get(productList.size() - DataConstant.ONE_INT).getId();
         Set<Long> queryProductIds = products.stream().map(Product::getId).collect(Collectors.toSet());
         loadedIdSet.addAll(queryProductIds);
-        sessionUtil.setLoadedIdSet(loadedIdSet);
-        sessionUtil.setScrollLoadedEndId(scrollLoadedEndId);
+        sessionUtils.setLoadedIdSet(loadedIdSet);
+        sessionUtils.setScrollLoadedEndId(scrollLoadedEndId);
         List<SimpleProductVO> simpleProductVOS = productList.stream().map(product -> copyMapper.productToSimpleProductVO(product)).collect(Collectors.toList());
         Collections.shuffle(simpleProductVOS);
-        if (simpleProductVOS.size()<DataConstant.SCROLL_QUERY_NUMBER*DataConstant.QUERY_NOT_ENOUGH_NUMBER){
-            sessionUtil.removeLoadedIdSet();
-            sessionUtil.removeScrollLoadedEndId();
+        if (simpleProductVOS.size()<DataConstant.PRODUCT_SCROLL_QUERY_NUMBER*DataConstant.QUERY_NOT_ENOUGH_NUMBER){
+            sessionUtils.removeLoadedIdSet();
+            sessionUtils.removeScrollLoadedEndId();
         }
         return Result.success(simpleProductVOS);
     }

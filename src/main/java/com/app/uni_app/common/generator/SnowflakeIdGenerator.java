@@ -1,6 +1,5 @@
 package com.app.uni_app.common.generator;
 
-import jakarta.annotation.Resource;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -16,8 +15,13 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 @Component
 public class SnowflakeIdGenerator {
-    @Resource
-    private SnowflakeIdGenerator snowflakeIdGenerator;
+
+    /**
+     * 订单前缀
+     */
+    private static final String ORDER_NO_PREFIX = "yyMMdd";
+
+
     /**
      * 起始时间戳（自定义，建议设置为项目上线时间，减少ID长度）
      * 2026-01-01 00:00:00 的毫秒级时间戳
@@ -153,7 +157,7 @@ public class SnowflakeIdGenerator {
      */
     public String generateOrderNo() {
         // Spring原生DateTimeFormatter（线程安全，替代SimpleDateFormat）
-        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyMMdd");
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern(ORDER_NO_PREFIX);
         String datePart = LocalDateTime.now().format(dateFormatter);
 
         // 生成雪花ID并截取后12位（缩短长度，仍保证唯一）

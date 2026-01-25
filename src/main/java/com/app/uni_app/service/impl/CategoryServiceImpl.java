@@ -5,7 +5,7 @@ import com.app.uni_app.common.constant.DataConstant;
 import com.app.uni_app.common.constant.MessageConstant;
 import com.app.uni_app.common.mapstruct.CopyMapper;
 import com.app.uni_app.common.result.Result;
-import com.app.uni_app.common.utils.CaffeineUtils;
+import com.app.uni_app.common.util.CaffeineUtils;
 import com.app.uni_app.mapper.CategoryMapper;
 import com.app.uni_app.pojo.dto.CategoryDTO;
 import com.app.uni_app.pojo.emums.CommonStatus;

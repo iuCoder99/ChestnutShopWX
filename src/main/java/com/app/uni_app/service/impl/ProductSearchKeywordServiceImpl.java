@@ -1,7 +1,7 @@
 package com.app.uni_app.service.impl;
 
 import com.app.uni_app.common.result.Result;
-import com.app.uni_app.common.utils.CaffeineUtils;
+import com.app.uni_app.common.util.CaffeineUtils;
 import com.app.uni_app.mapper.ProductSearchKeywordMapper;
 import com.app.uni_app.pojo.emums.CommonStatus;
 import com.app.uni_app.pojo.entity.ProductSearchKeyword;

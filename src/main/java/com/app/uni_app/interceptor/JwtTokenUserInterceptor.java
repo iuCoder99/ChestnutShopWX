@@ -4,13 +4,14 @@ package com.app.uni_app.interceptor;
 import com.app.uni_app.common.constant.JwtTokenClaimsConstant;
 import com.app.uni_app.common.context.BaseContext;
 import com.app.uni_app.common.result.UserInfo;
-import com.app.uni_app.common.utils.JwtUtil;
+import com.app.uni_app.common.util.JwtUtils;
 import com.app.uni_app.properties.JwtProperties;
 import io.jsonwebtoken.Claims;
+import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
@@ -23,7 +24,7 @@ import org.springframework.web.servlet.HandlerInterceptor;
 @Slf4j
 public class JwtTokenUserInterceptor implements HandlerInterceptor {
 
-    @Autowired
+    @Resource
     private JwtProperties jwtProperties;
 
     /**
@@ -35,7 +36,7 @@ public class JwtTokenUserInterceptor implements HandlerInterceptor {
      * @return
      * @throws Exception
      */
-    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+    public boolean preHandle(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull Object handler) throws Exception {
         //判断当前拦截到的是 Controller 的方法还是其他资源
         if (!(handler instanceof HandlerMethod)) {
             //当前拦截到的不是动态方法，直接放行
@@ -48,7 +49,7 @@ public class JwtTokenUserInterceptor implements HandlerInterceptor {
         //2、校验令牌
         try {
             log.info("jwt校验:{}", token);
-            Claims claims = JwtUtil.parseJWT(jwtProperties.getUserSecretKey(), token);
+            Claims claims = JwtUtils.parseJWT(jwtProperties.getUserSecretKey(), token);
             String userId = claims.get(JwtTokenClaimsConstant.USER_ID).toString();
             log.info("当前用户的id：{}", userId);
             UserInfo userInfo = UserInfo.builder().id(userId)

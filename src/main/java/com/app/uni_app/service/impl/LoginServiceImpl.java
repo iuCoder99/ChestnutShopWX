@@ -3,12 +3,13 @@ package com.app.uni_app.service.impl;
 import com.app.uni_app.common.constant.JwtTokenClaimsConstant;
 import com.app.uni_app.common.constant.MessageConstant;
 import com.app.uni_app.common.context.BaseContext;
+import com.app.uni_app.common.generator.NicknameGenerator;
 import com.app.uni_app.common.mapstruct.CopyMapper;
 import com.app.uni_app.common.result.LoginInfo;
 import com.app.uni_app.common.result.Result;
 import com.app.uni_app.common.result.UserInfo;
-import com.app.uni_app.common.utils.JwtUtil;
-import com.app.uni_app.common.utils.WechatLoginUtil;
+import com.app.uni_app.common.util.JwtUtils;
+import com.app.uni_app.common.util.WechatLoginUtils;
 import com.app.uni_app.mapper.LoginMapper;
 import com.app.uni_app.pojo.dto.UserDTO;
 import com.app.uni_app.pojo.dto.UserWechatDTO;
@@ -39,7 +40,7 @@ public class LoginServiceImpl extends ServiceImpl<LoginMapper, User> implements 
     private JwtProperties jwtProperties;
 
     @Resource
-    private WechatLoginUtil wechatLoginUtil;
+    private WechatLoginUtils wechatLoginUtils;
 
     @Resource
     private CopyMapper copyMapper;
@@ -75,7 +76,7 @@ public class LoginServiceImpl extends ServiceImpl<LoginMapper, User> implements 
         claims.put(JwtTokenClaimsConstant.USER_ID, userInfo.getId());
         claims.put(JwtTokenClaimsConstant.OPEN_ID, userInfo.getOpenid());
         claims.put(JwtTokenClaimsConstant.NICK_NAME, userInfo.getNickname());
-        return JwtUtil.createJWT(jwtProperties.getUserSecretKey(), jwtProperties.getUserTtl(), claims);
+        return JwtUtils.createJWT(jwtProperties.getUserSecretKey(), jwtProperties.getUserTtl(), claims);
     }
 
     /**
@@ -88,7 +89,7 @@ public class LoginServiceImpl extends ServiceImpl<LoginMapper, User> implements 
     @Override
     public Result loginByWechat(UserWechatDTO userWechatDTO) {
         String code = userWechatDTO.getCode();
-        JsonNode json = wechatLoginUtil.getWechatUserInfo(code);
+        JsonNode json = wechatLoginUtils.getWechatUserInfo(code);
         JsonNode jsonNode = json.get(OPEN_ID);
         String openid = jsonNode == null ? null : jsonNode.asText();
         if (StringUtils.isBlank(openid)) {
@@ -136,11 +137,14 @@ public class LoginServiceImpl extends ServiceImpl<LoginMapper, User> implements 
         if (Objects.nonNull(user)) {
             return Result.error(MessageConstant.USER_NAME_EXISTS);
         }
+        String nickname = NicknameGenerator.generateDefaultNickname();
         String hashPassword = BCrypt.hashpw(password, BCrypt.gensalt());
-        boolean isSuccess = save(User.builder().username(username).
-                password(hashPassword).
-                phone(phone).
-                build());
+        boolean isSuccess = save(User.builder()
+                .username(username)
+                .password(hashPassword)
+                .phone(phone)
+                .nickname(nickname)
+                .build());
         if (!isSuccess) {
             return Result.error(MessageConstant.SQL_MESSAGE_SAVE_ERROR);
         }
