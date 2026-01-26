@@ -15,6 +15,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
+import java.util.Map;
 
 @Configuration
 public class CaffeineConfig {
@@ -70,7 +71,7 @@ public class CaffeineConfig {
      * 数据库商品最大 id
      */
     @Bean
-    public Cache<String, Long> MaxProductIdInDataCache() {
+    public Cache<String, Map<String,Long>> MaxAndMinProductIdInDataCache() {
         return Caffeine.newBuilder()
                 .initialCapacity(1)
                 .maximumSize(1)

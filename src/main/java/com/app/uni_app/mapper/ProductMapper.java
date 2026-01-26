@@ -10,6 +10,7 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author 20589
@@ -34,8 +35,9 @@ public interface ProductMapper extends BaseMapper<Product> {
 
     List<Product> getBriefProduct(@Param("productIdsList") List<String> productIdsList);
 
-    @Select("select id from product order by id DESC limit 1")
-    Long getMaxProductIdInData();
+    @Select("select max(id) as maxProductIdInData,min(id) as minProductIdInData from product")
+    Map<String,Long> getMaxAndMinProductIdMap();
+
 }
 
 

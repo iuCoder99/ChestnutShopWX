@@ -13,6 +13,7 @@ public class OrderWithItemVO {
     private String orderNo;
     private String userId;
     private String addressId;
+    private String totalGoodsAmount;
     private String totalAmount;
     private String freight;
     private String remark;
@@ -22,4 +23,5 @@ public class OrderWithItemVO {
     @JsonFormat(pattern = DatePatternConstants.DATE_TIME_FORM)
     private LocalDateTime updateTime;
     private List<OrderItemVO> orderItems;
+    private OrderAddressVO address;
 }

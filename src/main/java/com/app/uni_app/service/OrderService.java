@@ -9,6 +9,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 public interface OrderService extends IService<Order> {
+
     Result insertOrder(@NotNull  OrderDTO orderDTO);
 
     Result getOrderList(Integer pageNum, Integer pageSize, String status);
@@ -19,6 +20,8 @@ public interface OrderService extends IService<Order> {
 
     Result confirmOrderReceipt(@NotBlank String orderNo);
 
+    Result deleteOrder(@NotBlank String orderNo);
+
     Result getOrderFreight(@NotBlank String productIds, @NotBlank String addressId);
 
     Result getOrderLogistics(@NotBlank String orderNo);
@@ -28,4 +31,6 @@ public interface OrderService extends IService<Order> {
     Result searchOrderByCondition(@NotBlank String SearchCondition);
 
     Result getOrderListByPage(@NotBlank String pageName);
+
+
 }

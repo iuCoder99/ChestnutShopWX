@@ -61,7 +61,7 @@
     <select id="selectOrderByDescSalesCountLimit" resultMap="ProductResultMap">
         <include refid="selectSimpleAllProduct_Where_SQL"/>
         order by p.sales_count DESC
-        limit #{limit}
+        limit  #{limit}
     </select>
 
     <select id="selectByCategoryIdPage" resultMap="ProductWithImageAndSpecResultMap">

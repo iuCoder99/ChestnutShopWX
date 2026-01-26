@@ -91,6 +91,17 @@ public class OrderController {
     }
 
     /**
+     * 删除订单
+     * @param orderNo
+     * @return
+     */
+    @DeleteMapping("/delete")
+    @Operation(summary = "删除订单" , description = "逻辑删除订单")
+    public Result deleteOrder(@RequestParam @NotBlank String orderNo){
+        return orderService.deleteOrder(orderNo);
+    }
+
+    /**
      * 计算运费
      * @param productIds
      * @param addressId
@@ -125,7 +136,7 @@ public class OrderController {
     }
 
     /**
-     * 条件搜索订单,一个字符串后端判断类型
+     * 条件搜索订单,前端传字符串,后端判断类型
      * @param searchCondition
      * @return
      */

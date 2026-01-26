@@ -38,12 +38,6 @@ public class SessionUtils {
         throw new ClassCastException(SessionConstant.ID_SET_STRUCTURE_TRANSFORM_ERROR);
     }
 
-    /**
-     * 获取数据库中最大的商品 id (缓存实现)
-     */
-    public Long getMaxIdInData() {
-        return caffeineUtils.getMaxProductIdInData();
-    }
 
     /**
      * 获取滚动加载后的结尾 id

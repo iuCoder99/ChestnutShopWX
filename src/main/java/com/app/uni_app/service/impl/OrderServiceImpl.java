@@ -193,6 +193,21 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         return Result.success(map);
     }
 
+
+    /**
+     * 删除订单
+     * @param orderNo
+     * @return
+     */
+    @Override
+    public Result deleteOrder(String orderNo) {
+        boolean isSuccess = lambdaUpdate().set(Order::getIs_deleted, CommonStatus.ACTIVE.getNumber()).eq(Order::getOrderNo, orderNo).update();
+        if(!isSuccess){
+            return Result.error(MessageConstant.DELETE_ERROR);
+        }
+        return Result.success(orderNo);
+    }
+
     /**
      * 计算运费
      * @param productIds

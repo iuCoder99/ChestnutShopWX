@@ -37,7 +37,6 @@ public class ExecutorTimedTask {
         System.out.println(PREFIX_SCHEDULED_EXECUTOR_TASK + LocalDateTime.now()
                 + THREAD_NAME + Thread.currentThread().getName()
                 + THREAD_ID + Thread.currentThread().getId());
-        caffeineUtils.updateMaxProductIdInData();
-
+        caffeineUtils.updateMaxAndMinProductIdInData();
     }
 }

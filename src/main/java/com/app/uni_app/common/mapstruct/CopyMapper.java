@@ -39,6 +39,8 @@ public interface CopyMapper {
 
     OrderWithItemVO orderToOrderWithItemVO(Order order);
 
+    OrderAddressVO addressToOrderAddressVO(Address address);
+
     OrderItemVO orderItemToOrderItemVO(OrderItem orderItem);
 
     @Mapping(source = "id", target = "orderId")

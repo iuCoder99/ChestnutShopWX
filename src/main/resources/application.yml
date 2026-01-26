@@ -48,6 +48,7 @@ mybatis-plus:
       logic-delete-field: is_deleted  # 逻辑删除字段（可选）
       logic-delete-value: 1           # 逻辑删除值
       logic-not-delete-value: 0       # 逻辑未删除值
+
 # SpringDoc 核心配置（阿里规范：配置项需注释，关键参数可配置）
 springdoc:
   # 仅扫描Controller包，避免扫描非接口类

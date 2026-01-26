@@ -1,11 +1,13 @@
 package com.app.uni_app.service.impl;
 
 
+import com.app.uni_app.common.constant.CaffeineConstant;
 import com.app.uni_app.common.constant.DataConstant;
 import com.app.uni_app.common.constant.MessageConstant;
 import com.app.uni_app.common.mapstruct.CopyMapper;
 import com.app.uni_app.common.result.PageResult;
 import com.app.uni_app.common.result.Result;
+import com.app.uni_app.common.util.CaffeineUtils;
 import com.app.uni_app.common.util.SessionUtils;
 import com.app.uni_app.mapper.ProductMapper;
 import com.app.uni_app.pojo.emums.CommonStatus;
@@ -47,6 +49,9 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
 
     @Resource
     private SessionUtils sessionUtils;
+
+    @Resource
+    private CaffeineUtils caffeineUtils;
 
     private static final String PRODUCT_LIST = "productList";
     private static final String END_PRODUCT_ID = "endProductId";
@@ -218,12 +223,14 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
     public Result getSimpleProductByScrollQuery() {
         HashSet<Long> loadedIdSet = sessionUtils.getLoadedIdSet();
         Long scrollLoadedEndId = sessionUtils.getScrollLoadedEndId();
+        Map<String, Long> maxAndMinProductIdInData = caffeineUtils.getMaxAndMinProductIdInData();
+        Long maxProductIdInDataOrDefault = maxAndMinProductIdInData.getOrDefault(CaffeineConstant.MAP_KEY_MAX_PRODUCT_ID_IN_DATA, DataConstant.ZERO_LONG);
+        Long minProductIdInDataOrDefault = maxAndMinProductIdInData.getOrDefault(CaffeineConstant.MAP_KEY_MIN_PRODUCT_ID_IN_DATA, DataConstant.ZERO_LONG);
         if (scrollLoadedEndId.equals(DataConstant.ZERO_LONG)) {
-            Long maxIdInData = sessionUtils.getMaxIdInData();
-            if (Objects.isNull(maxIdInData)){
+            if (maxProductIdInDataOrDefault.equals(DataConstant.ZERO_LONG)){
                 return Result.success(CollectionUtils.emptyCollection());
             }
-            long bound = Math.round(maxIdInData * DataConstant.QUERY_SECURITY_NUMBER);
+            long bound = Math.round(maxProductIdInDataOrDefault * DataConstant.QUERY_SECURITY_NUMBER);
             bound = Math.max(bound, 2);
             scrollLoadedEndId = ThreadLocalRandom.current().nextLong(1, bound);
         }
@@ -239,7 +246,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         sessionUtils.setScrollLoadedEndId(scrollLoadedEndId);
         List<SimpleProductVO> simpleProductVOS = productList.stream().map(product -> copyMapper.productToSimpleProductVO(product)).collect(Collectors.toList());
         Collections.shuffle(simpleProductVOS);
-        if (simpleProductVOS.size()<DataConstant.PRODUCT_SCROLL_QUERY_NUMBER*DataConstant.QUERY_NOT_ENOUGH_NUMBER){
+        if (scrollLoadedEndId.equals(minProductIdInDataOrDefault)){
             sessionUtils.removeLoadedIdSet();
             sessionUtils.removeScrollLoadedEndId();
         }

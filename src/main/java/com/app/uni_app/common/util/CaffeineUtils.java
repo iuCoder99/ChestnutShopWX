@@ -9,6 +9,7 @@ import jakarta.annotation.Resource;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 
 @Component
 public  class CaffeineUtils {
@@ -20,7 +21,7 @@ public  class CaffeineUtils {
     private LoadingCache<String, List<Category>> categoryTreeCache;
 
     @Resource
-    private Cache<String, Long> maxProductIdInDataCache;
+    private Cache<String, Map<String,Long>> maxAndMinProductIdInDataCache;
 
     @Resource
     private ProductMapper productMapper;
@@ -54,16 +55,17 @@ public  class CaffeineUtils {
     }
 
     /**
-     * 获取数据库中最大的商品 id
+     * 获取数据库中最大和最小的商品 id map
      */
-    public Long getMaxProductIdInData() {
-        return maxProductIdInDataCache.get(CaffeineConstant.CACHE_KEY_MAX_PRODUCT_ID_IN_DATA,s->productMapper.getMaxProductIdInData());
+    public Map<String, Long> getMaxAndMinProductIdInData() {
+        return maxAndMinProductIdInDataCache.get(CaffeineConstant.CACHE_KEY_MAX_AND_MIN_PRODUCT_ID_MAP,s->productMapper.getMaxAndMinProductIdMap());
     }
 
     /**
-     * 更新数据库中最大的商品 id
+     * 更新数据库中最大和最小的商品 id map
      */
-    public void updateMaxProductIdInData(){
-        Long maxProductIdInData = productMapper.getMaxProductIdInData();
-        maxProductIdInDataCache.put(CaffeineConstant.CACHE_KEY_MAX_PRODUCT_ID_IN_DATA,maxProductIdInData);
-    }}
+    public void updateMaxAndMinProductIdInData(){
+        Map<String,Long> maxAndMinProductIdMap = productMapper.getMaxAndMinProductIdMap();
+        maxAndMinProductIdInDataCache.put(CaffeineConstant.CACHE_KEY_MAX_AND_MIN_PRODUCT_ID_MAP,maxAndMinProductIdMap);
+    }
+}

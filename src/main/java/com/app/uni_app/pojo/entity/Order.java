@@ -120,6 +120,12 @@ public class Order {
     private CommonStatus is_deleted;
 
     /**
+     * 地址相关(收件人,地址...)
+     */
+    @TableField(exist = false)
+    private Address address;
+
+    /**
      * 快递公司（可为空）
      */
     private String logisticsCompany;

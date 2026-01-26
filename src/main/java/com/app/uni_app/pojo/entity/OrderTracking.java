@@ -1,6 +1,7 @@
 package com.app.uni_app.pojo.entity;
 
 import com.app.uni_app.common.constant.DatePatternConstants;
+import com.app.uni_app.pojo.emums.OrderTrackingStatusEnum;
 import com.baomidou.mybatisplus.annotation.*;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
@@ -27,11 +28,16 @@ public class OrderTracking {
      */
     private String logisticsNo;
 
-
     /**
      * 关联订单 id
      */
     private String orderId;
+
+
+    /**
+     * 物流状态(1-揽收, 2-运输, 3-派送, 4-签收)
+     */
+    private OrderTrackingStatusEnum logisticsStatus;
 
     /**
      * 所在地点

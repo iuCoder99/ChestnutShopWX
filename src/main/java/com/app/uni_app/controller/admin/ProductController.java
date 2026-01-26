@@ -125,6 +125,7 @@ public class ProductController {
         return productService.getSimpleProductByScrollQuery();
     }
 
+
     /**
      * 用户获取热门搜索关键词列表
      * @return
