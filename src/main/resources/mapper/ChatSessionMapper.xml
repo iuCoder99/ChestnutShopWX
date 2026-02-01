@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.app.uni_app.mapper.ChatSessionMapper">
+
+    <select id="selectSessionList" resultType="com.app.uni_app.pojo.vo.ChatSessionVO">
+        SELECT
+            CASE
+                WHEN s.user_id = #{userId} THEN s.contact_id
+                ELSE s.user_id
+            END AS contactId,
+            COALESCE(u.nickname, a.name, '未知用户') AS contactNickname,
+            COALESCE(u.avatar, '/static/images/default-avatar.png') AS contactAvatar,
+            s.last_msg_content AS lastMsgContent,
+            s.last_msg_time AS lastMsgTime,
+            CASE
+                WHEN s.user_id = #{userId} THEN s.unread_count_a
+                ELSE s.unread_count_b
+            END AS unreadCount
+        FROM
+            chat_session s
+        LEFT JOIN
+            sys_user u ON u.id = (CASE WHEN s.user_id = #{userId} THEN s.contact_id ELSE s.user_id END)
+        LEFT JOIN
+            admin a ON a.id = (CASE WHEN s.user_id = #{userId} THEN s.contact_id ELSE s.user_id END)
+        WHERE
+            s.user_id = #{userId} OR s.contact_id = #{userId}
+        ORDER BY
+            s.last_msg_time DESC
+    </select>
+
+</mapper>

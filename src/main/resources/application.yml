@@ -88,3 +88,6 @@ app:
     weChatPayCertFilePath: ${app.wechat.weChatPayCertFilePath:your_wechat_cert_path_placeholder}
     notifyUrl: https://58869fb.r2.cpolar.top/notify/paySuccess  # 非敏感，回调地址
     refundNotifyUrl: https://58869fb.r2.cpolar.top/notify/refundSuccess  # 非敏感，退款回调地址
+
+netty:
+  port: 8888
