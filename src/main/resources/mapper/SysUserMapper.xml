@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.app.uni_app.mapper.SysUserMapper">
+
+
+    <!-- 系统用户表 -->
+    <resultMap id="SysUserResultMap" type="com.app.uni_app.pojo.entity.SysUser">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="username" property="username" jdbcType="VARCHAR"/>
+        <result column="password" property="password" jdbcType="VARCHAR"/>
+        <result column="nickname" property="nickname" jdbcType="VARCHAR"/>
+        <result column="phone" property="phone" jdbcType="VARCHAR"/>
+        <result column="user_type" property="userType" jdbcType="TINYINT"/>
+        <result column="avatar" property="avatar" jdbcType="VARCHAR"/>
+        <result column="openid" property="openid" jdbcType="VARCHAR"/>
+        <result column="is_enable" property="isEnable" jdbcType="TINYINT"/>
+        <result column="first_login_time" property="firstLoginTime" jdbcType="TIMESTAMP"/>
+        <result column="last_login_time" property="lastLoginTime" jdbcType="TIMESTAMP"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+        <collection property="sysRoleList" javaType="List" ofType="com.app.uni_app.pojo.entity.SysRole" resultMap="SysRoleResultMap"/>
+        <collection property="sysPermissionList" javaType="List" ofType="com.app.uni_app.pojo.entity.SysPermission" resultMap="SysPermissionResultMap"/>
+    </resultMap>
+
+
+    <!-- 系统角色表-->
+    <resultMap id="SysRoleResultMap" type="com.app.uni_app.pojo.entity.SysRole">
+        <id column="role_id" property="id" jdbcType="BIGINT"/>
+        <result column="role_code" property="roleCode" jdbcType="VARCHAR"/>
+        <result column="role_name" property="roleName" jdbcType="VARCHAR"/>
+        <result column="role_sort" property="sort" jdbcType="INTEGER"/>
+        <result column="role_is_enable" property="isEnable" jdbcType="TINYINT"/>
+        <result column="role_create_time" property="createTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <!-- 系统权限表 -->
+    <resultMap id="SysPermissionResultMap" type="com.app.uni_app.pojo.entity.SysPermission">
+        <id column="perm_id" property="id" jdbcType="BIGINT"/>
+        <result column="perm_code" property="permCode" jdbcType="VARCHAR"/>
+        <result column="perm_name" property="permName" jdbcType="VARCHAR"/>
+        <result column="perm_type" property="permType" jdbcType="TINYINT"/>
+        <result column="parent_id" property="parentId" jdbcType="BIGINT"/>
+        <result column="perm_sort" property="sort" jdbcType="INTEGER"/>
+        <result column="perm_is_enable" property="isEnable" jdbcType="TINYINT"/>
+        <result column="perm_create_time" property="createTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+
+    <select id="getSysUserByNameWithRolesAndPermissions" resultMap="SysUserResultMap">
+        <include refid="selectSysUserWithRolesAndPermissions_SQL"/>
+        and su.username=#{username}
+    </select>
+    <select id="getSysUserByUserIdWithRolesAndPermissions" resultMap="SysUserResultMap">
+        <include refid="selectSysUserWithRolesAndPermissions_SQL"/>
+        and su.id=#{userId}
+    </select>
+
+
+    <sql id="selectSysUserWithRolesAndPermissions_SQL">
+        select
+            su.id,
+            su.username,
+            su.password,
+            su.nickname,
+            su.avatar,
+            su.phone,
+            su.openid,
+            su.user_type,
+            su.is_enable,
+            su.first_login_time,
+            su.last_login_time,
+            su.create_time,
+            su.update_time,
+            sr.id as role_id,
+            sr.role_code,
+            sr.role_name,
+            sr.sort as role_sort,
+            sr.is_enable as role_is_enable,
+            sr.create_time as role_create_time,
+            sp.id as perm_id,
+            sp.perm_code,
+            sp.perm_name,
+            sp.perm_type,
+            sp.parent_id,
+            sp.sort as perm_sort,
+            sp.is_enable as perm_is_enable,
+            sp.create_time as perm_create_time
+        from sys_user  su
+                 LEFT JOIN sys_user_role sur ON su.id= sur.user_id
+                 LEFT JOIN sys_role  sr ON sr.id=sur.role_id and sr.is_enable=1
+                 LEFT JOIN sys_role_permission srp ON srp.role_id=sr.id
+                 LEFT JOIN sys_permission sp ON sp.id=srp.perm_id and sp.is_enable=1
+        where su.is_enable=1
+    </sql>
+</mapper>

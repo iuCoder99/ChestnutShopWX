@@ -1,13 +1,16 @@
 package com.app.uni_app.common.util;
 
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
+import org.springframework.stereotype.Component;
+
+import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.Map;
 
+@Component
 public class JwtUtils {
     /**
      * 生成jwt
@@ -16,26 +19,19 @@ public class JwtUtils {
      * @param secretKey jwt 秘钥
      * @param ttlMillis jwt过期时间(毫秒)
      * @param claims    设置的信息
-     * @return
      */
     public static String createJWT(String secretKey, long ttlMillis, Map<String, Object> claims) {
-        // 指定签名的时候使用的签名算法，也就是header那部分
-        SignatureAlgorithm signatureAlgorithm = SignatureAlgorithm.HS256;
-
         // 生成 JWT的时间
         long expMillis = System.currentTimeMillis() + ttlMillis;
         Date exp = new Date(expMillis);
 
-        // 设置jwt的 body
-        JwtBuilder builder = Jwts.builder()
-                // 设置过期时间
-                .setExpiration(exp)
-                // 如果有私有声明，一定要先设置这个自己创建的私有的声明，这个是给builder的claim赋值，一旦写在标准的声明赋值之后，就是覆盖了那些标准的声明的
-                .setClaims(claims)
-                // 设置签名使用的签名算法和签名使用的秘钥
-                .signWith(signatureAlgorithm, secretKey.getBytes(StandardCharsets.UTF_8));
+        SecretKey key = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
 
-        return builder.compact();
+        return Jwts.builder()
+                .claims(claims)
+                .expiration(exp)
+                .signWith(key)
+                .compact();
     }
 
     /**
@@ -46,13 +42,15 @@ public class JwtUtils {
      * @return
      */
     public static Claims parseJWT(String secretKey, String token) {
-        // 得到 DefaultJwtParser
-        Claims claims = Jwts.parser()
-                // 设置签名的秘钥
-                .setSigningKey(secretKey.getBytes(StandardCharsets.UTF_8))
-                // 设置需要解析的 jwt
-                .parseClaimsJws(token).getBody();
-        return claims;
-    }
+        // 彻底清理 Token 中的所有空白字符，防止 Base64 解码失败
+        String cleanToken = token.replaceAll("\\s", "");
+        
+        SecretKey key = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
 
+        return Jwts.parser()
+                .verifyWith(key)
+                .build()
+                .parseSignedClaims(cleanToken)
+                .getPayload();
+    }
 }

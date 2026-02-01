@@ -2,8 +2,15 @@ package com.app.uni_app.common.constant;
 
 public class MessageConstant {
     public static final String LOGIN_ERROR="用户名或密码错误";
+    public static final String TOKEN_EXPIRED="JWT 令牌解析失败(token过期)";
+    public static final String TOKEN_INVALID="JWT 令牌解析失败(token签名错误,篡改)";
+    public static final String TOKEN_PARSE_ERROR="JWT 令牌解析失败";
+    public static final String PERMISSION_DENIED="权限不足";
+    public static final String SYSTEM_ERROR="服务器异常";
     public static final String INPUT_DATA_ERROR="输入数据不合法";
+    public static final String WECHAT_CODE_EMPTY="微信登录失败,请重试";
     public static final String GET_OPENID_ERROR="登录校验失败,请重新登录";
+    public static final String PASSWORD_MODIFY_ERROR="密码修改失败,请重试";
     public static final String ACCOUNT_NOT_FOUND = "账号不存在";
     public static final String ORDER_NOT_FOUND = "订单不存在";
     public static final String ACCOUNT_LOCKED = "账号被锁定";

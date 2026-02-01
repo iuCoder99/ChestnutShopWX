@@ -13,7 +13,7 @@ import org.mapstruct.ReportingPolicy;
         unmappedSourcePolicy = ReportingPolicy.IGNORE)  // 忽略源对象多余字段)
 public interface CopyMapper {
 
-    UserInfo userToUserInfo(User user);
+    UserInfo sysUserToUserInfo(SysUser sysUser);
 
     Banner bannerDTOToBanner(BannerDTO bannerDTO);
 
@@ -25,7 +25,7 @@ public interface CopyMapper {
 
     ProductSpecVO productSpecToProductSpecVO(ProductSpec productSpec);
 
-    UserDetailVO userToUserDetailVO(User user);
+    UserDetailVO sysUserToUserDetailVO(SysUser sysUser);
 
     @Mapping(target = "id", expression = "java(addressDTO.getId().isBlank()? null:Long.valueOf(addressDTO.getId()))")
     Address addressDTOToAddress(AddressDTO addressDTO);

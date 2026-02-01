@@ -4,9 +4,9 @@ import com.app.uni_app.common.constant.MessageConstant;
 import com.app.uni_app.common.context.BaseContext;
 import com.app.uni_app.common.mapstruct.CopyMapper;
 import com.app.uni_app.common.result.Result;
-import com.app.uni_app.mapper.UserMapper;
+import com.app.uni_app.mapper.SysUserMapper;
 import com.app.uni_app.pojo.dto.UserDetailDTO;
-import com.app.uni_app.pojo.entity.User;
+import com.app.uni_app.pojo.entity.SysUser;
 import com.app.uni_app.pojo.vo.UserDetailVO;
 import com.app.uni_app.service.UserService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -15,7 +15,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 @Service
-public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
+public class UserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> implements UserService {
     @Resource
     private CopyMapper copyMapper;
 
@@ -27,8 +27,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public Result getUserDetail() {
         String userId = BaseContext.getUserId();
-        User user = lambdaQuery().eq(User::getId, userId).one();
-        UserDetailVO userDetailVO = copyMapper.userToUserDetailVO(user);
+        SysUser user = lambdaQuery().eq(SysUser::getId, userId).one();
+        UserDetailVO userDetailVO = copyMapper.sysUserToUserDetailVO(user);
         return Result.success(userDetailVO);
     }
 
@@ -44,8 +44,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (StringUtils.isBlank(userDetailDTO.getNickname())) {
             return Result.error(MessageConstant.USER_NAME_NOT_NULL);
         }
-        boolean isSuccess = lambdaUpdate().eq(User::getId, userId).set(User::getNickname, userDetailDTO.getNickname())
-                .set(User::getAvatar, userDetailDTO.getAvatar()).set(User::getPhone, userDetailDTO.getPhone()).update();
+        boolean isSuccess = lambdaUpdate().eq(SysUser::getId, userId).set(SysUser::getNickname, userDetailDTO.getNickname())
+                .set(SysUser::getAvatar, userDetailDTO.getAvatar()).set(SysUser::getPhone, userDetailDTO.getPhone()).update();
         if (!isSuccess) {
             return Result.error(MessageConstant.SQL_MESSAGE_SAVE_ERROR);
         }

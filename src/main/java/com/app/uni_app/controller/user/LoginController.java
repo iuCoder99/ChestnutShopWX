@@ -4,7 +4,7 @@ import com.app.uni_app.common.context.BaseContext;
 import com.app.uni_app.common.result.Result;
 import com.app.uni_app.pojo.dto.UserDTO;
 import com.app.uni_app.pojo.dto.UserWechatDTO;
-import com.app.uni_app.service.LoginService;
+import com.app.uni_app.service.SysLoginService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "用户登录注册管理")
 public class LoginController {
     @Resource
-    private LoginService loginService;
+    private SysLoginService loginService;
 
     /**
      * 用户使用账户密码登录
@@ -34,7 +34,6 @@ public class LoginController {
     /**
      * 用户使用微信快捷登录
      *
-     * @return
      */
     @PostMapping("/login/wechat")
     @Operation(summary = "微信快捷登录", description = "用户通过微信进行快捷登录")

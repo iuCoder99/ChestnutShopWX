@@ -73,10 +73,10 @@ app:
     # JWT密钥（敏感信息，dev配置中覆盖）
     admin-secret-key: ${app.jwt.admin-secret-key:your_admin_jwt_secret_placeholder}
     admin-ttl: 7200000  # 非敏感，过期时间（毫秒）
-    admin-token-name: token  # 非敏感，前端令牌名称
+    admin-token-name: Authorization  # 非敏感，前端令牌名称      旧数据(token)
     user-secret-key: ${app.jwt.user-secret-key:your_user_jwt_secret_placeholder}
     user-ttl: 7200000
-    user-token-name: token
+    user-token-name: Authorization
   wechat:
     # 微信支付基础配置（敏感信息在dev中）
     appid: ${app.wechat.appid:your_wechat_appid_placeholder}

@@ -1,6 +1,6 @@
 package com.app.uni_app.common.context;
 
-import com.app.uni_app.common.exception.UnauthenticatedException;
+import org.apache.shiro.authz.UnauthenticatedException;
 import com.app.uni_app.common.result.UserInfo;
 import org.apache.commons.lang3.StringUtils;
 

@@ -5,6 +5,7 @@ import com.app.uni_app.common.constant.MessageConstant;
 import com.app.uni_app.common.result.Result;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.annotation.Order;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -16,10 +17,14 @@ import java.sql.SQLIntegrityConstraintViolationException;
 /**
  * 全局异常处理器，处理项目中抛出的业务异常
  */
+@Order(2)
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
     //TODO 业务异常处理...
+
+
+
 
     @ExceptionHandler(NoResourceFoundException.class)
     public void handleNoResourceFoundException(HttpServletRequest request, NoResourceFoundException e) {

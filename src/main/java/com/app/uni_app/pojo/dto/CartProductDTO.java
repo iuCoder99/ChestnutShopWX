@@ -17,4 +17,6 @@ public class CartProductDTO {
      * 数量
      */
     private Integer quantity;
+
+
 }

@@ -12,6 +12,7 @@ import com.app.uni_app.service.AddressService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
 import org.apache.commons.collections4.CollectionUtils;
+import org.springframework.aop.framework.AopContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,9 +24,6 @@ public class AddressServiceImpl extends ServiceImpl<AddressMapper, Address> impl
 
     @Resource
     private CopyMapper copyMapper;
-
-    @Resource
-    private AddressServiceImpl addressServiceProxy;
 
 
     private static final String ADDRESS_ID = "addressId";
@@ -55,7 +53,8 @@ public class AddressServiceImpl extends ServiceImpl<AddressMapper, Address> impl
         String userId = BaseContext.getUserId();
         Address address = copyMapper.addressDTOToAddress(addressDTO);
         address.setUserId(Long.valueOf(userId));
-        addressServiceProxy.makeOnlyHaveOneDefault(addressDTO, userId);
+        AddressServiceImpl addressService = (AddressServiceImpl) AopContext.currentProxy();
+        addressService.makeOnlyHaveOneDefault(addressDTO, userId);
         boolean isSuccess = save(address);
         if (!isSuccess) {
             return Result.error(MessageConstant.SQL_MESSAGE_SAVE_ERROR);
@@ -101,7 +100,8 @@ public class AddressServiceImpl extends ServiceImpl<AddressMapper, Address> impl
     public Result updateAddress(AddressDTO addressDTO) {
         String userId = BaseContext.getUserId();
         Address address = copyMapper.addressDTOToAddress(addressDTO);
-        addressServiceProxy.makeOnlyHaveOneDefault(addressDTO, userId);
+        AddressServiceImpl addressService = (AddressServiceImpl) AopContext.currentProxy();
+        addressService.makeOnlyHaveOneDefault(addressDTO, userId);
         address.setUserId(Long.valueOf(userId));
         boolean isSuccess = updateById(address);
         if (!isSuccess) {
