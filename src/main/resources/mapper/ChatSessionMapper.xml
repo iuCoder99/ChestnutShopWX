@@ -8,7 +8,7 @@
                 WHEN s.user_id = #{userId} THEN s.contact_id
                 ELSE s.user_id
             END AS contactId,
-            COALESCE(u.nickname, a.name, '未知用户') AS contactNickname,
+            COALESCE(u.nickname, a.nickname, '未知用户') AS contactNickname,
             COALESCE(u.avatar, '/static/images/default-avatar.png') AS contactAvatar,
             s.last_msg_content AS lastMsgContent,
             s.last_msg_time AS lastMsgTime,

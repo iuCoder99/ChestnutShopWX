@@ -133,6 +133,7 @@ public class ShiroConfig {
         filterChainDefinitionMap.put("/api/product/**", "anon");
         filterChainDefinitionMap.put("/api/category/**", "anon");
         filterChainDefinitionMap.put("/api/notice/**", "anon");
+        filterChainDefinitionMap.put("/api/upload/image", "anon");
 
 
         filterChainDefinitionMap.put("/swagger-ui/**", "anon");

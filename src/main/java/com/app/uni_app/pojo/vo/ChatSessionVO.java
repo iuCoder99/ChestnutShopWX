@@ -1,5 +1,7 @@
 package com.app.uni_app.pojo.vo;
 
+import com.app.uni_app.common.constant.DatePatternConstants;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -24,6 +26,7 @@ public class ChatSessionVO {
 
     private String lastMsgContent;
 
+    @JsonFormat(pattern = DatePatternConstants.DATE_TIME_FORM)
     private LocalDateTime lastMsgTime;
 
     private Integer unreadCount;

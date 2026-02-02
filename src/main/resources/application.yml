@@ -88,6 +88,12 @@ app:
     weChatPayCertFilePath: ${app.wechat.weChatPayCertFilePath:your_wechat_cert_path_placeholder}
     notifyUrl: https://58869fb.r2.cpolar.top/notify/paySuccess  # 非敏感，回调地址
     refundNotifyUrl: https://58869fb.r2.cpolar.top/notify/refundSuccess  # 非敏感，退款回调地址
+  aliyun:
+    oss:
+      endpoint: ${app.aliyun.oss.endpoint:oss-cn-hangzhou.aliyuncs.com}
+      access-key-id: ${app.aliyun.oss.access-key-id:your_access_key_id_placeholder}
+      access-key-secret: ${app.aliyun.oss.access-key-secret:your_access_key_secret_placeholder}
+      bucket-name: ${app.aliyun.oss.bucket-name:your_bucket_name_placeholder}
 
 netty:
   port: 8888
