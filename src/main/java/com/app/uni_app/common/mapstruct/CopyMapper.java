@@ -47,4 +47,6 @@ public interface CopyMapper {
     OrderWithTrackingVO orderToOrderWithTrackingVO(Order order);
 
     OrderTrackingVO orderTrackingToOrderTrackingVO(OrderTracking orderTracking);
+
+    FactoryInfoVO factoryInfoToFactoryInfoVO(FactoryInfo factoryInfo);
 }
