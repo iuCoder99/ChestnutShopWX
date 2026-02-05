@@ -68,6 +68,7 @@ public class OrderController {
         return orderService.getOrderDesc(orderNo);
     }
 
+
     /**
      * 取消订单
      * @param orderNo
@@ -77,6 +78,17 @@ public class OrderController {
     @Operation(summary = "取消订单", description = "根据订单编号取消订单，可选填取消原因")
     public Result cancelOrder(@RequestParam @NotBlank String orderNo, String cancelReason) {
         return orderService.cancelOrder(orderNo, cancelReason);
+    }
+
+    /**
+     * 支付成功订单
+     * @param orderNo
+     * @return
+     */
+    @PutMapping("/pay/success")
+    @Operation(summary = "支付成功订单" , description = "根据订单编号将订单状态修改为待收货")
+    public Result paySuccessOrder(@RequestParam @NotBlank String orderNo){
+        return orderService.paySuccessOrder(orderNo);
     }
 
     /**

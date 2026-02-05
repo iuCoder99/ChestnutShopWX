@@ -2,6 +2,7 @@ package com.app.uni_app.common.handler;
 
 
 import com.app.uni_app.common.constant.MessageConstant;
+import com.app.uni_app.common.exception.PayException;
 import com.app.uni_app.common.result.Result;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +25,10 @@ public class GlobalExceptionHandler {
     //TODO 业务异常处理...
 
 
+    @ExceptionHandler(PayException.class)
+    public Result handlePayException() {
+        return Result.error(MessageConstant.NETWORK_ERROR);
+    }
 
 
     @ExceptionHandler(NoResourceFoundException.class)

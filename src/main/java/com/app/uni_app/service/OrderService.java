@@ -32,5 +32,5 @@ public interface OrderService extends IService<Order> {
 
     Result getOrderListByPage(@NotBlank String pageName);
 
-
+    Result paySuccessOrder(@NotBlank String orderNo);
 }

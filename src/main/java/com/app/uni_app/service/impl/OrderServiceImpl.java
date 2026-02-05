@@ -5,6 +5,7 @@ import com.app.uni_app.common.constant.DataConstant;
 import com.app.uni_app.common.constant.MessageConstant;
 import com.app.uni_app.common.constant.RegexConstants;
 import com.app.uni_app.common.context.BaseContext;
+import com.app.uni_app.common.exception.PayException;
 import com.app.uni_app.common.generator.SnowflakeIdGenerator;
 import com.app.uni_app.common.mapstruct.CopyMapper;
 import com.app.uni_app.common.result.PageResult;
@@ -19,6 +20,7 @@ import com.app.uni_app.pojo.dto.ScrollQueryDTO;
 import com.app.uni_app.pojo.emums.CommonStatus;
 import com.app.uni_app.pojo.emums.OrderPageEnum;
 import com.app.uni_app.pojo.emums.OrderStatusEnum;
+import com.app.uni_app.pojo.emums.PayTypeEnum;
 import com.app.uni_app.pojo.entity.Address;
 import com.app.uni_app.pojo.entity.Order;
 import com.app.uni_app.pojo.entity.OrderItem;
@@ -41,6 +43,7 @@ import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 @Service
@@ -63,6 +66,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     private SessionUtils sessionUtils;
 
     private static final String PRODUCT_IDS = "productIds";
+    private static final String IS_SUCCESS = "isSuccess";
+    private static final String TRY_NUM = "tryNum";
 
 
     /**
@@ -123,7 +128,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         if (userAllOrder.isEmpty()) {
             return Result.success();
         }
-        if (orderPageEnum.equals(OrderPageEnum.ALL)){
+        if (orderPageEnum.equals(OrderPageEnum.ALL)) {
             List<OrderWithItemVO> orderWithItemVOs = userAllOrder.stream().map(order -> copyMapper.orderToOrderWithItemVO(order)).toList();
             return Result.success(orderWithItemVOs);
         }
@@ -172,6 +177,49 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     }
 
     /**
+     * 支付成功订单,如果五次失败,使用线程池异步进行更新(保证一定更新成功)(目前测试,只支持微信支付)
+     * @param orderNo
+     * @return
+     */
+    @Override
+    @RemoveOrderSessionAnnotation
+    public Result paySuccessOrder(String orderNo) {
+        int tryNum = 0;
+        Map<String, Object> map = new HashMap<>(2);
+        updateOrderPayIsSuccess(map,orderNo, tryNum);
+        boolean isSuccess = (boolean) map.get(IS_SUCCESS);
+        tryNum = (int) map.get(TRY_NUM);
+        while (!isSuccess) {
+            Map<String, Object> nextMap = updateOrderPayIsSuccess(map,orderNo, tryNum);
+            tryNum = (int) nextMap.get(TRY_NUM);
+            isSuccess=(boolean) nextMap.get(IS_SUCCESS);
+
+        }
+        Map<String, Object> resultMap = new HashMap<>(2);
+        resultMap.put(Order.Fields.orderNo, orderNo);
+        resultMap.put(Order.Fields.status,OrderStatusEnum.PENDING_SHIPMENT.getValue());
+        return Result.success(resultMap);
+    }
+
+
+    private Map<String, Object> updateOrderPayIsSuccess(Map<String,Object> map,String orderNo, int tryNum) {
+        if (tryNum == 5) {
+            throw new PayException(orderNo);
+
+        }
+        boolean isSuccess = lambdaUpdate().eq(Order::getOrderNo, orderNo)
+                .set(Order::getStatus, OrderStatusEnum.PENDING_SHIPMENT)
+                .set(Order::getPayType, PayTypeEnum.WECHAT_PAY)
+                .set(Order::getPayTime,LocalDateTime.now())
+                .update();
+        tryNum++;
+        map.put(IS_SUCCESS, isSuccess);
+        map.put(TRY_NUM, tryNum);
+        return map;
+    }
+
+
+    /**
      * 确定收货
      * @param orderNo
      * @return
@@ -202,7 +250,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     @Override
     public Result deleteOrder(String orderNo) {
         boolean isSuccess = lambdaUpdate().set(Order::getIs_deleted, CommonStatus.ACTIVE.getNumber()).eq(Order::getOrderNo, orderNo).update();
-        if(!isSuccess){
+        if (!isSuccess) {
             return Result.error(MessageConstant.DELETE_ERROR);
         }
         return Result.success(orderNo);

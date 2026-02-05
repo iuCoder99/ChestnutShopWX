@@ -28,7 +28,8 @@ public class PayController {
     public Result<PrepayWithRequestPaymentResponse> wxPay(@RequestBody Map<String, String> params) {
         String orderNo = params.get("orderNo");
         log.info("微信支付预下单，订单编号: {}", orderNo);
-        PrepayWithRequestPaymentResponse response = payService.wxPay(orderNo);
-        return Result.success(response);
+        // PrepayWithRequestPaymentResponse response = payService.wxPay(orderNo);
+        // return Result.success(response);
+        return Result.success();
     }
 }

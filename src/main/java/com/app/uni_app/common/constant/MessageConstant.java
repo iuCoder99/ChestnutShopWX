@@ -7,6 +7,7 @@ public class MessageConstant {
     public static final String TOKEN_PARSE_ERROR="JWT 令牌解析失败";
     public static final String PERMISSION_DENIED="权限不足";
     public static final String SYSTEM_ERROR="服务器异常";
+    public static final String NETWORK_ERROR="网络异常";
     public static final String INPUT_DATA_ERROR="输入数据不合法";
     public static final String WECHAT_CODE_EMPTY="微信登录失败,请重试";
     public static final String GET_OPENID_ERROR="登录校验失败,请重新登录";

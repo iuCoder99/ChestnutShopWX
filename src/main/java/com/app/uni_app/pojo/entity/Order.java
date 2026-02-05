@@ -67,7 +67,7 @@ public class Order {
     private OrderStatusEnum status = OrderStatusEnum.PENDING_PAYMENT;
 
     /**
-     * 支付方式（微信支付/支付宝，可为空）
+     * 支付方式（未支付/微信支付/支付宝）
      */
     private PayTypeEnum payType;
 

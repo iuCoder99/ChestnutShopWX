@@ -27,7 +27,6 @@ public interface CopyMapper {
 
     UserDetailVO sysUserToUserDetailVO(SysUser sysUser);
 
-    @Mapping(target = "id", expression = "java(addressDTO.getId().isBlank()? null:Long.valueOf(addressDTO.getId()))")
     Address addressDTOToAddress(AddressDTO addressDTO);
 
     @Mapping(source = "id", target = "id")

@@ -12,6 +12,10 @@ import org.apache.commons.lang3.StringUtils;
 @Getter
 public enum PayTypeEnum {
     /**
+     * 未支付
+     */
+    UNPAID("unpaid",0,"未支付"),
+    /**
      * 微信支付
      */
     WECHAT_PAY("wechatPay", 1, "微信支付"),
