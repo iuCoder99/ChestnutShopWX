@@ -9,6 +9,11 @@ public interface SysUserMapper extends BaseMapper<SysUser> {
     SysUser getSysUserByNameWithRolesAndPermissions(String username);
 
     SysUser getSysUserByUserIdWithRolesAndPermissions(Long userId);
+
+    SysUser getSysUserByOpenidWithRolesAndPermissions(String openid);
+
+    void insertSysUserConnectSysRole(Long userId, int roleId);
 }
+
 
 

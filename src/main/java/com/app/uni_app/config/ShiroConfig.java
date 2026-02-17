@@ -31,11 +31,8 @@ public class ShiroConfig {
 
     // 1. 自定义Realm（认证+授权核心）
     @Bean
-    public CustomRealm customRealm(JwtProperties jwtProperties, SysLoginService sysLoginService) {
-        CustomRealm realm = new CustomRealm();
-        realm.setJwtProperties(jwtProperties);
-        realm.setSysLoginService(sysLoginService);
-        return realm;
+    public CustomRealm customRealm() {
+        return new CustomRealm();
     }
 
     // 2. 彻底禁用Session（前后端分离必需）

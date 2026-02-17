@@ -2,6 +2,8 @@ package com.app.uni_app.controller.user;
 
 import com.app.uni_app.common.context.BaseContext;
 import com.app.uni_app.common.result.Result;
+import com.app.uni_app.infrastructure.redis.connect.RedisConnector;
+import com.app.uni_app.infrastructure.redis.generator.RedisKeyGenerator;
 import com.app.uni_app.pojo.dto.UserDTO;
 import com.app.uni_app.pojo.dto.UserWechatDTO;
 import com.app.uni_app.service.SysLoginService;
@@ -60,6 +62,8 @@ public class LoginController {
     @PostMapping("/logout")
     @Operation(summary = "退出登录", description = "用户退出登录，清除当前登录状态")
     public Result logout() {
+        String userId = BaseContext.getUserId();
+        RedisConnector.delete(RedisKeyGenerator.loginUser(Long.parseLong(userId)));
         BaseContext.removeUserInfo();
         return Result.success();
     }

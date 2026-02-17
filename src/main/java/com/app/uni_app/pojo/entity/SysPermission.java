@@ -2,6 +2,9 @@ package com.app.uni_app.pojo.entity;
 
 import com.app.uni_app.pojo.emums.CommonStatus;
 import lombok.Data;
+
+import java.io.Serial;
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
@@ -11,7 +14,10 @@ import java.time.LocalDateTime;
  * @since 2026-01-26
  */
 @Data
-public class SysPermission {
+public class SysPermission implements Serializable {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
 
     /**
      * 主键 ID

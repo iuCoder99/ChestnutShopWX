@@ -55,7 +55,15 @@
         <include refid="selectSysUserWithRolesAndPermissions_SQL"/>
         and su.id=#{userId}
     </select>
+    <select id="getSysUserByOpenidWithRolesAndPermissions" resultMap="SysUserResultMap">
+        <include refid="selectSysUserWithRolesAndPermissions_SQL"/>
+        and su.openid=#{openid}
+    </select>
 
+    <insert id="insertSysUserConnectSysRole">
+        insert into sys_user_role(user_id,role_id)
+        values (#{userId},#{roleId})
+    </insert>
 
     <sql id="selectSysUserWithRolesAndPermissions_SQL">
         select

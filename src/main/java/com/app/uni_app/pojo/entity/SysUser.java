@@ -1,5 +1,6 @@
 package com.app.uni_app.pojo.entity;
 
+import com.app.uni_app.common.result.UserInfo;
 import com.app.uni_app.pojo.emums.CommonStatus;
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.AllArgsConstructor;
@@ -7,7 +8,10 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
+import lombok.experimental.FieldNameConstants;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -22,7 +26,11 @@ import java.util.List;
 @NoArgsConstructor
 @Accessors(chain = true)
 @TableName(value = "sys_user") // 指定数据库表名
-public class SysUser  {
+@FieldNameConstants
+public class SysUser implements Serializable {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
 
     /**
      * 主键 ID
@@ -90,6 +98,12 @@ public class SysUser  {
      */
     @TableField(exist = false)
     private List<SysPermission> sysPermissionList;
+
+    /**
+     * 用户简单登录信息
+     */
+    @TableField(exist = false)
+    private UserInfo userInfo;
 
     /**
      * 首次登录时间

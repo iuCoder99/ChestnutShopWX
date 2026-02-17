@@ -13,7 +13,7 @@ public interface SysLoginService extends IService<SysUser> {
 
     SysUser getSysUserByUserIdWithRolesAndPermissions(Long userId);
 
-    SysUser getSimpleSysUserByUserId(Long userId);
+    SysUser getSysUserByOpenidWithRolesAndPermissions(String openid);
 
     Result loginByAccount(@NotNull UserDTO userDTO);
 

@@ -2,6 +2,7 @@ package com.app.uni_app.security.token;
 
 
 import io.jsonwebtoken.Claims;
+import lombok.Getter;
 import org.apache.shiro.authc.AuthenticationToken;
 
 /**
@@ -10,6 +11,7 @@ import org.apache.shiro.authc.AuthenticationToken;
 public class JwtToken implements AuthenticationToken {
     private final String userId; // 用户唯一标识
     private final String token;  // JWT令牌（凭证）
+    @Getter
     private final Claims claims; // 解析后的 Claims
 
     // 构造器：从Token解析出userId后传入（解析逻辑在JwtFilter中）
@@ -31,7 +33,4 @@ public class JwtToken implements AuthenticationToken {
         return token;
     }
 
-    public Claims getClaims() {
-        return claims;
-    }
 }

@@ -1,11 +1,10 @@
 package com.app.uni_app.security.filter;
 
-import com.app.uni_app.common.context.BaseContext;
 import com.app.uni_app.common.constant.JwtTokenClaimsConstant;
-import com.app.uni_app.common.constant.MessageConstant;
-import com.app.uni_app.common.exception.InvalidCredentialsException;
+import com.app.uni_app.common.context.BaseContext;
 import com.app.uni_app.common.result.Result;
 import com.app.uni_app.common.util.JwtUtils;
+import com.app.uni_app.pojo.entity.SysUser;
 import com.app.uni_app.properties.JwtProperties;
 import com.app.uni_app.security.token.JwtToken;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,10 +17,7 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.Setter;
-import org.apache.shiro.authc.AuthenticationException;
 import org.apache.shiro.authc.AuthenticationToken;
-import org.apache.shiro.authc.ExpiredCredentialsException;
-import org.apache.shiro.authc.UnknownAccountException;
 import org.apache.shiro.subject.Subject;
 import org.apache.shiro.web.filter.authc.AuthenticatingFilter;
 import org.apache.shiro.web.util.WebUtils;
@@ -129,13 +125,15 @@ public class JwtFilter extends AuthenticatingFilter {
      */
     @Override
     protected boolean isAccessAllowed(ServletRequest request, ServletResponse response, Object mappedValue) {
-        // 在无状态架构中，每次请求都应重新认证
-        // 如果返回true，则不会进入onAccessDenied，也就不会执行login
-        // 所以对于需要认证的接口，这里返回false，强制进入onAccessDenied
-        if ("OPTIONS".equalsIgnoreCase(WebUtils.toHttp(request).getMethod())) {
+        if ("OPTIONS".equalsIgnoreCase(((HttpServletRequest) request).getMethod())) {
             return true;
         }
-        return false;
+        
+        try {
+            return onAccessDenied(request, response);
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     /**
@@ -143,36 +141,56 @@ public class JwtFilter extends AuthenticatingFilter {
      */
     @Override
     protected boolean onAccessDenied(ServletRequest servletRequest, ServletResponse servletResponse) throws Exception {
-        AuthenticationToken token = createToken(servletRequest, servletResponse);
-
-        // 无有效Token，直接返回401
-        if (token == null) {
-            log.debug("无有效Token，返回未登录");
-            return sendUnAuthorizedResponse(servletResponse, MessageConstant.USER_NOT_LOGIN);
+        HttpServletRequest request = (HttpServletRequest) servletRequest;
+        HttpServletResponse response = (HttpServletResponse) servletResponse;
+        
+        // 尝试解析 Token
+        String tokenStr = getRequestToken(request);
+        if (tokenStr == null) {
+            return true; // 没有 Token，放行（可能是匿名访问接口，交给 Shiro 后续处理）
         }
 
-        // 有Token，执行Shiro认证
         try {
-            Subject subject = getSubject(servletRequest, servletResponse);
-            subject.login(token); // 调用CustomRealm.doGetAuthenticationInfo
+            // 解析 JWT
+            Claims claims = JwtUtils.parseJWT(jwtProperties.getUserSecretKey(), tokenStr);
+            String userId = claims.get(JwtTokenClaimsConstant.SYS_USER_ID).toString();
             
-            // 登录成功，检查是否需要刷新 Token
-            refreshTokenIfNeed(servletResponse, (JwtToken) token);
+            // 构建 Token
+            JwtToken token = new JwtToken(userId, tokenStr, claims);
             
-            log.debug("Token 认证成功");
-            return true;
-        } catch (AuthenticationException e) {
-            log.error("Token 认证失败", e);
-            String msg = MessageConstant.USER_NOT_LOGIN;
-            if (e instanceof ExpiredCredentialsException) {
-                msg = MessageConstant.TOKEN_EXPIRED;
-            } else if (e instanceof InvalidCredentialsException) {
-                msg = MessageConstant.TOKEN_INVALID;
-            } else if (e instanceof UnknownAccountException) {
-                msg = MessageConstant.ACCOUNT_NOT_FOUND;
+            // 提交给 Realm 进行认证
+            Subject subject = getSubject(request, response);
+            subject.login(token);
+            
+            // 认证成功后，手动将 UserInfo 放入 ThreadLocal
+            SysUser user = (SysUser) subject.getPrincipal();
+            if (user != null) {
+                BaseContext.setUserInfo(user.getUserInfo());
             }
-            return sendUnAuthorizedResponse(servletResponse, msg);
+            
+            // 认证成功，检查刷新 Token
+            // refreshTokenIfNeed(response, token); // 暂时注释，先调通主流程
+
+            return true; // 认证通过，放行
+        } catch (Exception e) {
+            log.error("Token 认证失败", e);
+            return onLoginFailure(response, e);
         }
+    }
+
+    private String getRequestToken(HttpServletRequest request) {
+        String token = request.getHeader(jwtProperties.getUserTokenName());
+        if (token != null && token.startsWith("Bearer ")) {
+            return token.substring(7);
+        }
+        return null;
+    }
+
+    private boolean onLoginFailure(ServletResponse response, Exception e) throws IOException {
+        HttpServletResponse httpResponse = (HttpServletResponse) response;
+        httpResponse.setContentType("application/json;charset=utf-8");
+        httpResponse.getWriter().write(objectMapper.writeValueAsString(Result.error(401, "认证失败：" + e.getMessage())));
+        return false;
     }
 
     /**

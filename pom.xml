@@ -16,7 +16,7 @@
     <version>0.0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>uni_app</name>
-    <description>小程序后端单模块项目（集成MyBatis-Plus）</description>
+    <description>小程序后端单模块项目</description>
 
     <properties>
         <java.version>17</java.version>
@@ -94,6 +94,18 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+
+        <!-- 显式引入 Jackson（GenericJackson2JsonRedisSerializer 依赖） -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+
+        <!-- 序列化 Java8 时间类型（LocalDateTime 等） -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
         </dependency>
 
 

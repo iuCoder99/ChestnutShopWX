@@ -10,9 +10,13 @@ import com.app.uni_app.common.result.Result;
 import com.app.uni_app.common.result.UserInfo;
 import com.app.uni_app.common.util.JwtUtils;
 import com.app.uni_app.common.util.WechatLoginUtils;
+import com.app.uni_app.infrastructure.redis.connect.RedisConnector;
+import com.app.uni_app.infrastructure.redis.generator.RedisKeyGenerator;
 import com.app.uni_app.mapper.SysUserMapper;
 import com.app.uni_app.pojo.dto.UserDTO;
 import com.app.uni_app.pojo.dto.UserWechatDTO;
+import com.app.uni_app.pojo.emums.CommonStatus;
+import com.app.uni_app.pojo.emums.UserRoleEnum;
 import com.app.uni_app.pojo.entity.SysUser;
 import com.app.uni_app.properties.JwtProperties;
 import com.app.uni_app.service.SysLoginService;
@@ -22,6 +26,7 @@ import jakarta.annotation.Resource;
 import org.apache.commons.lang3.StringUtils;
 import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -43,7 +48,6 @@ public class SysLoginServiceImpl extends ServiceImpl<SysUserMapper, SysUser> imp
     @Resource
     private CopyMapper copyMapper;
 
-    private static final String OPEN_ID = "openid";
 
     /**
      * 用户登录
@@ -51,9 +55,9 @@ public class SysLoginServiceImpl extends ServiceImpl<SysUserMapper, SysUser> imp
      *
      */
     @Override
-    public Result loginByAccount(UserDTO userDTO) {
+    public Result<Object> loginByAccount(UserDTO userDTO) {
         String password = userDTO.getPassword();
-        SysUser user = lambdaQuery().eq(SysUser::getUsername, userDTO.getUsername()).one();
+        SysUser user = getSysUserByNameWithRolesAndPermissions(userDTO.getUsername());
         if (Objects.isNull(user)) {
             return Result.error(MessageConstant.ACCOUNT_NOT_FOUND);
         }
@@ -61,10 +65,24 @@ public class SysLoginServiceImpl extends ServiceImpl<SysUserMapper, SysUser> imp
             return Result.error(MessageConstant.LOGIN_ERROR);
         }
         UserInfo userInfo = copyMapper.sysUserToUserInfo(user);
+        setUserToRedis(user, userInfo);
         String token = getToken(userInfo);
         BaseContext.setUserInfo(userInfo);
         return Result.success(new LoginInfo(token, userInfo));
 
+    }
+
+    private void setUserToRedis(SysUser user, UserInfo userInfo) {
+        if (Objects.isNull(user)) {
+            return;
+        }
+        String key = RedisKeyGenerator.loginUser(user.getId());
+        HashMap<String, Object> loginUserMap = new HashMap<>(4);
+        loginUserMap.put(SysUser.Fields.userInfo, userInfo);
+        loginUserMap.put(SysUser.Fields.isEnable, CommonStatus.ACTIVE.getNumber());
+        loginUserMap.put(SysUser.Fields.sysRoleList, user.getSysRoleList());
+        loginUserMap.put(SysUser.Fields.sysPermissionList, user.getSysPermissionList());
+        RedisConnector.opsForHash().putAll(key, loginUserMap);
     }
 
     private String getToken(UserInfo userInfo) {
@@ -81,7 +99,8 @@ public class SysLoginServiceImpl extends ServiceImpl<SysUserMapper, SysUser> imp
      *
      */
     @Override
-    public Result loginByWechat(UserWechatDTO userWechatDTO) {
+    @Transactional(rollbackFor = Exception.class)
+    public Result<Object> loginByWechat(UserWechatDTO userWechatDTO) {
 
         String code = userWechatDTO.getCode();
         if (StringUtils.isBlank(code)) {
@@ -89,31 +108,31 @@ public class SysLoginServiceImpl extends ServiceImpl<SysUserMapper, SysUser> imp
         }
 
         JsonNode json = wechatLoginUtils.getWechatUserInfo(code);
-        if (Objects.isNull(json) || !json.has(OPEN_ID)) {
+        if (Objects.isNull(json) || !json.has(SysUser.Fields.openid)) {
             return Result.error(MessageConstant.GET_OPENID_ERROR);
         }
 
-        String openid = json.get(OPEN_ID).asText();
+        String openid = json.get(SysUser.Fields.openid).asText();
         if (StringUtils.isBlank(openid)) {
             return Result.error(MessageConstant.GET_OPENID_ERROR);
         }
-
-        SysUser user = this.lambdaQuery().eq(SysUser::getOpenid, openid).one();
+        SysUser user = getSysUserByOpenidWithRolesAndPermissions(openid);
         //新用户
         if (Objects.isNull(user)) {
             SysUser userNew = new SysUser();
             userNew.setOpenid(openid).setNickname(userWechatDTO.getNickName()).setAvatar(userWechatDTO.getAvatarUrl()).setFirstLoginTime(LocalDateTime.now()).setLastLoginTime(LocalDateTime.now());
             save(userNew);
+            sysUserMapper.insertSysUserConnectSysRole(userNew.getId(), UserRoleEnum.ROLE_BUYER.getId());
             UserInfo userInfo = copyMapper.sysUserToUserInfo(userNew);
+            setUserToRedis(userNew, userInfo);
             String token = getToken(userInfo);
-            BaseContext.setUserInfo(userInfo);
             return Result.success(new LoginInfo(token, userInfo));
         }
         user.setLastLoginTime(LocalDateTime.now());
         updateById(user);
         UserInfo userInfo = copyMapper.sysUserToUserInfo(user);
+        setUserToRedis(user, userInfo);
         String token = getToken(userInfo);
-        BaseContext.setUserInfo(userInfo);
         return Result.success(new LoginInfo(token, userInfo));
     }
 
@@ -123,7 +142,7 @@ public class SysLoginServiceImpl extends ServiceImpl<SysUserMapper, SysUser> imp
      * @return
      */
     @Override
-    public Result getUser() {
+    public Result<Object> getUser() {
         return Result.success(BaseContext.getUserInfo());
     }
 
@@ -132,22 +151,25 @@ public class SysLoginServiceImpl extends ServiceImpl<SysUserMapper, SysUser> imp
      *
      */
     @Override
-    public Result createAccount(String username, String password, String phone) {
+    @Transactional(rollbackFor = Exception.class)
+    public Result<Object> createAccount(String username, String password, String phone) {
         SysUser user = lambdaQuery().eq(SysUser::getUsername, username).one();
         if (Objects.nonNull(user)) {
             return Result.error(MessageConstant.USER_NAME_EXISTS);
         }
         String nickname = NicknameGenerator.generateDefaultNickname();
         String hashPassword = BCrypt.hashpw(password, BCrypt.gensalt());
-        boolean isSuccess = save(SysUser.builder()
+        SysUser userNew = SysUser.builder()
                 .username(username)
                 .password(hashPassword)
                 .phone(phone)
                 .nickname(nickname)
-                .build());
+                .build();
+        boolean isSuccess = save(userNew);
         if (!isSuccess) {
             return Result.error(MessageConstant.SQL_MESSAGE_SAVE_ERROR);
         }
+        sysUserMapper.insertSysUserConnectSysRole(userNew.getId(), UserRoleEnum.ROLE_BUYER.getId());
         return Result.success();
     }
 
@@ -220,14 +242,16 @@ public class SysLoginServiceImpl extends ServiceImpl<SysUserMapper, SysUser> imp
     }
 
     /**
-     * 根据 userId 查询 user
+     * 根据 openid 查询 user 带角色和权限
      */
     @Override
-    public SysUser getSimpleSysUserByUserId(Long userId) {
-        if (Objects.isNull(userId)) {
+    public SysUser getSysUserByOpenidWithRolesAndPermissions(String openid) {
+        if (Objects.isNull(openid)) {
             return null;
 
         }
-        return lambdaQuery().eq(SysUser::getId, userId).one();
+        return sysUserMapper.getSysUserByOpenidWithRolesAndPermissions(openid);
     }
+
+
 }
