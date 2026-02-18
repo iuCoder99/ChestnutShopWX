@@ -18,7 +18,7 @@ import java.sql.SQLIntegrityConstraintViolationException;
 /**
  * 全局异常处理器，处理项目中抛出的业务异常
  */
-@Order(2)
+@Order(3)
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
@@ -82,7 +82,6 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler({SQLException.class})
     public Result<?> SQLExceptionHandler(Exception ex) {
-        log.error("数据库操作失败", ex);
         log.error(" SQL ExceptionHandler拦截到:{};异常信息:{}", ex.getClass(), ex.getMessage());
         return Result.error(MessageConstant.SQL_MESSAGE_SAVE_ERROR);
     }
@@ -96,7 +95,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler
     public Result globalExceptionHandler(Exception e) {
-        log.error("完整异常栈:", e);
+     //   log.error("完整异常栈:", e);
         log.error("globalExceptionHandler拦截到:{};异常信息:{}", e.getClass(), e.getMessage());
         return Result.error(MessageConstant.TOM_CAT_ERROR);
     }

@@ -3,6 +3,7 @@ package com.app.uni_app.security.realm;
 import com.app.uni_app.common.constant.JwtTokenClaimsConstant;
 import com.app.uni_app.common.constant.MessageConstant;
 import com.app.uni_app.common.exception.InvalidCredentialsException;
+import com.app.uni_app.common.mapstruct.CopyMapper;
 import com.app.uni_app.common.result.UserInfo;
 import com.app.uni_app.infrastructure.redis.connect.RedisConnector;
 import com.app.uni_app.infrastructure.redis.generator.RedisKeyGenerator;
@@ -11,7 +12,9 @@ import com.app.uni_app.pojo.entity.SysPermission;
 import com.app.uni_app.pojo.entity.SysRole;
 import com.app.uni_app.pojo.entity.SysUser;
 import com.app.uni_app.security.token.JwtToken;
+import com.app.uni_app.service.impl.SysLoginServiceImpl;
 import io.jsonwebtoken.Claims;
+import jakarta.annotation.Resource;
 import lombok.Setter;
 import org.apache.shiro.authc.*;
 import org.apache.shiro.authz.AuthorizationInfo;
@@ -30,6 +33,12 @@ import java.util.stream.Collectors;
 @Setter
 public class CustomRealm extends AuthorizingRealm {
     private static final Logger log = LoggerFactory.getLogger(CustomRealm.class);
+
+    @Resource
+    private SysLoginServiceImpl sysLoginServiceImpl;
+
+    @Resource
+    private CopyMapper copyMapper;
 
     @Override
     public boolean supports(AuthenticationToken token) {
@@ -53,10 +62,17 @@ public class CustomRealm extends AuthorizingRealm {
         // 查询用户（带角色和权限）
         Map<String, Object> userMap = RedisConnector.opsForHash().entries(RedisKeyGenerator.loginUser(Long.parseLong(userId)));
 
+        // 如果 redis 存储用户信息过期,从数据库更新 redis 缓存
         if (userMap.isEmpty()) {
-            log.error("用户不存在：userId={}", userId);
-            throw new UnknownAccountException(MessageConstant.ACCOUNT_NOT_FOUND);
+            SysUser user = sysLoginServiceImpl.getSysUserByUserIdWithRolesAndPermissions(Long.valueOf(userId));
+            if (Objects.isNull(user)){
+                throw new UnknownAccountException(MessageConstant.USER_NOT_LOGIN);
 
+            }
+            UserInfo userInfo = copyMapper.sysUserToUserInfo(user);
+            sysLoginServiceImpl.setUserInfoToRedis(user, userInfo);
+            user.setUserInfo(userInfo);
+            return new SimpleAuthenticationInfo(user, token, this.getName());
         }
 
         if (!userMap.get(SysUser.Fields.isEnable).equals(CommonStatus.ACTIVE.getNumber())) {

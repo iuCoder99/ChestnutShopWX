@@ -77,6 +77,8 @@ app:
     user-secret-key: ${app.jwt.user-secret-key:your_user_jwt_secret_placeholder}
     user-ttl: 7200000
     user-token-name: Authorization
+    login-user-info-in-redis-ttl: 1 #Redis 存储用户登录信息过期时间(天)
+    login-refresh-token-ttl: 15 #Redis 存储刷新 token 过期时间(天)
   wechat:
     # 微信支付基础配置（敏感信息在dev中）
     appid: ${app.wechat.appid:your_wechat_appid_placeholder}

@@ -7,6 +7,7 @@ import com.app.uni_app.common.generator.NicknameGenerator;
 import com.app.uni_app.common.mapstruct.CopyMapper;
 import com.app.uni_app.common.result.LoginInfo;
 import com.app.uni_app.common.result.Result;
+import com.app.uni_app.common.result.ResultCode;
 import com.app.uni_app.common.result.UserInfo;
 import com.app.uni_app.common.util.JwtUtils;
 import com.app.uni_app.common.util.WechatLoginUtils;
@@ -19,6 +20,7 @@ import com.app.uni_app.pojo.emums.CommonStatus;
 import com.app.uni_app.pojo.emums.UserRoleEnum;
 import com.app.uni_app.pojo.entity.SysUser;
 import com.app.uni_app.properties.JwtProperties;
+import com.app.uni_app.security.token.JwtToken;
 import com.app.uni_app.service.SysLoginService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -32,6 +34,8 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class SysLoginServiceImpl extends ServiceImpl<SysUserMapper, SysUser> implements SysLoginService {
@@ -65,14 +69,15 @@ public class SysLoginServiceImpl extends ServiceImpl<SysUserMapper, SysUser> imp
             return Result.error(MessageConstant.LOGIN_ERROR);
         }
         UserInfo userInfo = copyMapper.sysUserToUserInfo(user);
-        setUserToRedis(user, userInfo);
-        String token = getToken(userInfo);
+        setUserInfoToRedis(user, userInfo);
+        String accessToken = getAccessToken(userInfo);
+        String refreshToken = getRefreshToken(userInfo);
         BaseContext.setUserInfo(userInfo);
-        return Result.success(new LoginInfo(token, userInfo));
+        return Result.success(new LoginInfo(accessToken,refreshToken, userInfo));
 
     }
 
-    private void setUserToRedis(SysUser user, UserInfo userInfo) {
+    public void setUserInfoToRedis(SysUser user, UserInfo userInfo) {
         if (Objects.isNull(user)) {
             return;
         }
@@ -83,14 +88,24 @@ public class SysLoginServiceImpl extends ServiceImpl<SysUserMapper, SysUser> imp
         loginUserMap.put(SysUser.Fields.sysRoleList, user.getSysRoleList());
         loginUserMap.put(SysUser.Fields.sysPermissionList, user.getSysPermissionList());
         RedisConnector.opsForHash().putAll(key, loginUserMap);
+        RedisConnector.expire(key, jwtProperties.getLoginUserInfoInRedisTtl(), TimeUnit.DAYS);
     }
 
-    private String getToken(UserInfo userInfo) {
+    private String getAccessToken(UserInfo userInfo) {
         Map<String, Object> claims = new HashMap<>();
         claims.put(JwtTokenClaimsConstant.SYS_USER_ID, userInfo.getId());
-        claims.put(JwtTokenClaimsConstant.OPEN_ID, userInfo.getOpenid());
-        claims.put(JwtTokenClaimsConstant.NICK_NAME, userInfo.getNickname());
         return JwtUtils.createJWT(jwtProperties.getUserSecretKey(), jwtProperties.getUserTtl(), claims);
+    }
+
+    //刷新 token 格式: UUID
+    private String getRefreshToken(UserInfo userInfo) {
+        String refreshToken = UUID.randomUUID().toString();
+        String key = RedisKeyGenerator.loginRefreshToken(refreshToken);
+        HashMap<String, Object> map = new HashMap<>(1);
+        map.put(JwtTokenClaimsConstant.SYS_USER_ID, userInfo.getId());
+        RedisConnector.opsForHash().putAll(key, map);
+        RedisConnector.expire(key, jwtProperties.getLoginRefreshTokenTtl(), TimeUnit.DAYS);
+        return refreshToken;
     }
 
     /**
@@ -124,16 +139,18 @@ public class SysLoginServiceImpl extends ServiceImpl<SysUserMapper, SysUser> imp
             save(userNew);
             sysUserMapper.insertSysUserConnectSysRole(userNew.getId(), UserRoleEnum.ROLE_BUYER.getId());
             UserInfo userInfo = copyMapper.sysUserToUserInfo(userNew);
-            setUserToRedis(userNew, userInfo);
-            String token = getToken(userInfo);
-            return Result.success(new LoginInfo(token, userInfo));
+            setUserInfoToRedis(userNew, userInfo);
+            String accessToken = getAccessToken(userInfo);
+            String refreshToken = getRefreshToken(userInfo);
+            return Result.success(new LoginInfo(accessToken,refreshToken, userInfo));
         }
         user.setLastLoginTime(LocalDateTime.now());
         updateById(user);
         UserInfo userInfo = copyMapper.sysUserToUserInfo(user);
-        setUserToRedis(user, userInfo);
-        String token = getToken(userInfo);
-        return Result.success(new LoginInfo(token, userInfo));
+        setUserInfoToRedis(user, userInfo);
+        String accessToken = getAccessToken(userInfo);
+        String refreshToken = getRefreshToken(userInfo);
+        return Result.success(new LoginInfo(accessToken,refreshToken,userInfo));
     }
 
     /**
@@ -215,6 +232,28 @@ public class SysLoginServiceImpl extends ServiceImpl<SysUserMapper, SysUser> imp
         }
         return Result.success(user.getId());
 
+    }
+
+    /**
+     * 刷新 token
+     * @param refreshToken
+     * @return
+     */
+    @Override
+    public Result refreshToken(String refreshToken) {
+        Map<String, Object> refreshTokenMap = RedisConnector.opsForHash().entries(RedisKeyGenerator.loginRefreshToken(refreshToken));
+        if (refreshTokenMap.isEmpty()) {
+            return Result.error(ResultCode.REFRESH_TOKEN_EXPIRED.getCode(),MessageConstant.REFRESH_TOKEN_EXPIRED_ERROR);
+        }
+        String accessTokenNew = JwtUtils.createJWT(jwtProperties.getUserSecretKey(), jwtProperties.getUserTtl(), refreshTokenMap);
+        long userId = Long.parseLong(refreshTokenMap.get(JwtTokenClaimsConstant.SYS_USER_ID).toString());
+        RedisConnector.delete(RedisKeyGenerator.loginRefreshToken(refreshToken));
+        UserInfo userInfo = UserInfo.builder().id(String.valueOf(userId)).build();
+        String refreshTokenNew = getRefreshToken(userInfo);
+        HashMap<String, Object> resultMap = new HashMap<>(2);
+        resultMap.put(JwtToken.ACCESS_TOKEN,accessTokenNew);
+        resultMap.put(JwtToken.REFRESH_TOKEN,refreshTokenNew);
+        return Result.success(resultMap);
     }
 
     /**

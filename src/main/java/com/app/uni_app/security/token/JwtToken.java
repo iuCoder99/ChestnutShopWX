@@ -9,6 +9,11 @@ import org.apache.shiro.authc.AuthenticationToken;
  * 修复：Principal 存储用户ID，Credentials 存储 Token
  */
 public class JwtToken implements AuthenticationToken {
+
+    public static String ACCESS_TOKEN = "accessToken";
+    public static String REFRESH_TOKEN = "refreshToken";
+
+
     private final String userId; // 用户唯一标识
     private final String token;  // JWT令牌（凭证）
     @Getter

@@ -1,10 +1,8 @@
-package com.app.uni_app.config;
+package com.app.uni_app.security.config;
 
-import com.app.uni_app.common.util.JwtUtils;
 import com.app.uni_app.properties.JwtProperties;
 import com.app.uni_app.security.filter.JwtFilter;
 import com.app.uni_app.security.realm.CustomRealm;
-import com.app.uni_app.service.SysLoginService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import jakarta.servlet.Filter;
@@ -21,6 +19,8 @@ import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.web.servlet.HandlerExceptionResolver;
 
 import java.text.SimpleDateFormat;
 import java.util.LinkedHashMap;
@@ -75,18 +75,17 @@ public class ShiroConfig {
 
     // 5. 自定义JwtFilter
     @Bean
-    public JwtFilter jwtFilter(JwtUtils jwtUtils, JwtProperties jwtProperties, ObjectMapper objectMapper) {
+    public JwtFilter jwtFilter(JwtProperties jwtProperties, @Lazy HandlerExceptionResolver handlerExceptionResolver) {
         JwtFilter jwtFilter = new JwtFilter();
-        jwtFilter.setJwtUtils(jwtUtils);
         jwtFilter.setJwtProperties(jwtProperties);
-        jwtFilter.setObjectMapper(objectMapper);
-        
+        jwtFilter.setHandlerExceptionResolver(handlerExceptionResolver);
+
         // 配置 Token 白名单缓存，减少解析开销，并处理解析失败时的快速降级
         jwtFilter.setTokenWhitelistCache(Caffeine.newBuilder()
                 .expireAfterWrite(java.time.Duration.ofMinutes(10))
                 .maximumSize(1000)
                 .build());
-        
+
         return jwtFilter;
     }
 
@@ -123,6 +122,7 @@ public class ShiroConfig {
         Map<String, String> filterChainDefinitionMap = new LinkedHashMap<>();
         // 公开接口（无需认证）
         filterChainDefinitionMap.put("/api/user/login/**", "anon");
+        filterChainDefinitionMap.put("/api/user/refresh/**", "anon");
         filterChainDefinitionMap.put("/api/user/create/account", "anon");
         filterChainDefinitionMap.put("/api/user/forget/password", "anon");
         filterChainDefinitionMap.put("/api/user/change/password", "anon");
@@ -144,8 +144,8 @@ public class ShiroConfig {
         filterChainDefinitionMap.put("/js/**", "anon");
         filterChainDefinitionMap.put("/images/**", "anon");
         // 角色校验接口（需认证+对应角色）
-     //   filterChainDefinitionMap.put("/api/admin/**", "jwt,roles[admin]");
-     //   filterChainDefinitionMap.put("/api/user/**", "jwt,roles[user]");
+        //   filterChainDefinitionMap.put("/api/admin/**", "jwt,roles[admin]");
+        //   filterChainDefinitionMap.put("/api/user/**", "jwt,roles[user]");
         // 其他所有接口必须认证
         filterChainDefinitionMap.put("/**", "jwt");
         return filterChainDefinitionMap;

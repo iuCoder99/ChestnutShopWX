@@ -26,4 +26,7 @@ public interface SysLoginService extends IService<SysUser> {
     Result forgetPassword(@NotBlank String username, @NotBlank String phone, @NotBlank String passwordNew);
 
     Result changePassword(@NotBlank String username, @NotBlank String passwordOld, @NotBlank String passwordNew);
+
+    Result refreshToken(String refreshToken);
+
 }

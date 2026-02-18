@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class LoginInfo {
-    String token;
+    String accessToken;
+    String refreshToken;
     Object userInfo;
 }

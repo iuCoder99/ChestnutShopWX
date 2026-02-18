@@ -6,6 +6,4 @@ public class JwtTokenClaimsConstant {
      * user claims 参数
      */
     public static final String SYS_USER_ID = "sysUserId";
-    public static final String OPEN_ID = "openid";
-    public static final String NICK_NAME = "nickName";
 }

@@ -8,6 +8,7 @@ import com.app.uni_app.infrastructure.redis.constant.RedisConstant;
 public class RedisKeyGenerator {
 
     /**
+     * 用户登录信息
      * login:user: + userId
      * @param userId
      * @return
@@ -16,13 +17,13 @@ public class RedisKeyGenerator {
         return RedisConstant.PREFIX_LOGIN + RedisConstant.USER + userId;
     }
 
+
     /**
-     * order:user: + userId
-     * @param userId
+     *刷新 Token
+     * login:refresh:token + UUID
      * @return
      */
-    public static String orderUser(long userId) {
-        return RedisConstant.PREFIX_ORDER + RedisConstant.USER + userId;
+    public static String loginRefreshToken(String UUID) {
+        return RedisConstant.PREFIX_LOGIN + RedisConstant.REFRESH + RedisConstant.TOKEN + UUID;
     }
-
 }

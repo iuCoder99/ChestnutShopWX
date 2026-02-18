@@ -1,17 +1,22 @@
 package com.app.uni_app.common.util;
 
+import com.app.uni_app.common.constant.MessageConstant;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.security.SignatureException;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.Map;
+import java.util.Objects;
 
 @Component
 public class JwtUtils {
+    private static final String JWT_PREFIX = "Bearer ";
+
     /**
      * 生成jwt
      * 使用Hs256算法, 私匙使用固定秘钥
@@ -42,9 +47,11 @@ public class JwtUtils {
      * @return
      */
     public static Claims parseJWT(String secretKey, String token) {
-        // 彻底清理 Token 中的所有空白字符，防止 Base64 解码失败
-        String cleanToken = token.replaceAll("\\s", "");
-        
+        if (Objects.isNull(token) || !token.startsWith(JWT_PREFIX)) {
+            throw new SignatureException(MessageConstant.TOKEN_INVALID);
+
+        }
+        String cleanToken = token.substring(JWT_PREFIX.length()).replaceAll("\\s", "");
         SecretKey key = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
 
         return Jwts.parser()
