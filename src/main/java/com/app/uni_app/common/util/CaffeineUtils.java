@@ -20,7 +20,7 @@ public  class CaffeineUtils {
     @Resource
     private LoadingCache<String, List<Category>> categoryTreeCache;
 
-    @Resource
+    @Resource(name = "MaxAndMinProductIdInDataCache")
     private Cache<String, Map<String,Long>> maxAndMinProductIdInDataCache;
 
     @Resource
