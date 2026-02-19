@@ -6,6 +6,7 @@ import com.app.uni_app.pojo.dto.BannerSortDTO;
 import com.app.uni_app.pojo.dto.BannerStatusDTO;
 import com.app.uni_app.pojo.entity.Banner;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.fasterxml.jackson.core.JsonProcessingException;
 
 /**
  * @author 20589
@@ -13,7 +14,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
  * @createDate 2025-12-26 20:32:21
  */
 public interface BannerService extends IService<Banner> {
-    Result getBannerList(Integer pageNum, Integer pageSize);
+    Result getBannerList(Integer pageNum, Integer pageSize) throws JsonProcessingException;
 
     Result addBanner(BannerDTO bannerDTO);
 

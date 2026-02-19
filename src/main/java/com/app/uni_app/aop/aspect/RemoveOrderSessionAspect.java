@@ -19,11 +19,11 @@ public class RemoveOrderSessionAspect {
     private SessionUtils sessionUtils;
 
     @Pointcut(value = "@annotation(com.app.uni_app.aop.annotation.RemoveOrderSessionAnnotation)")
-    public void servicePointcut() {
+    public void pointcut() {
     }
 
-    @AfterReturning(pointcut = "servicePointcut()", returning = "result")
-    public void afterSuccess(Result<?> result) {
+    @AfterReturning(pointcut = "pointcut()", returning = "result")
+    public void afterReturnSuccess(Result<?> result) {
         if (Objects.isNull(result)) {
             return;
         }

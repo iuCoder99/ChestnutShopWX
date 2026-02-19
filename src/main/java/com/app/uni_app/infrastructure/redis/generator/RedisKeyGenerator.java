@@ -26,4 +26,15 @@ public class RedisKeyGenerator {
     public static String loginRefreshToken(String UUID) {
         return RedisConstant.PREFIX_LOGIN + RedisConstant.REFRESH + RedisConstant.TOKEN + UUID;
     }
+
+
+    /**
+     * banner 轮播图
+     * @return
+     */
+    public static String banner(){
+        return RedisConstant.PREFIX_BANNER +RedisConstant.ALL;
+
+    }
+
 }

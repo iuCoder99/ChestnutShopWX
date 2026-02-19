@@ -3,6 +3,9 @@ package com.app.uni_app.pojo.entity;
 import com.app.uni_app.pojo.emums.BannerStatus;
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
+
+import java.io.Serial;
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
@@ -11,7 +14,11 @@ import java.time.LocalDateTime;
  */
 @Data
 @TableName("banner")
-public class Banner {
+public class Banner implements Serializable {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
+
 
     /**
      * 轮播图ID（主键）

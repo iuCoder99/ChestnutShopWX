@@ -27,6 +27,7 @@ public class MessageConstant {
     public static final String CONTENT_NOT_EXIST_ERROR = "删除的内容不存在";
     public static final String DELETE_ERROR = "删除失败,请重试";
     public static final String DATA_ERROR = "数据异常,请重试";
+    public static final String JSON_CONVERT_ERROR =  "JSON 序列化异常";
 
 
 }
