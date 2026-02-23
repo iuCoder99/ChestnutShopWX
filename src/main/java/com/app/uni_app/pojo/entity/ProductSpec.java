@@ -3,7 +3,10 @@ package com.app.uni_app.pojo.entity;
 import com.app.uni_app.common.constant.DatePatternConstants;
 import com.baomidou.mybatisplus.annotation.*;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.io.Serial;
@@ -20,6 +23,9 @@ import java.util.Date;
  */
 @Data
 @TableName(value = "product_spec")
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class ProductSpec implements Serializable {
 
     @Serial

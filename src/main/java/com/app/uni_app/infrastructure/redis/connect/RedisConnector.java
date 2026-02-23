@@ -1,13 +1,88 @@
 package com.app.uni_app.infrastructure.redis.connect;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Setter;
 import org.springframework.data.redis.core.*;
+import org.springframework.util.Assert;
 
+import java.util.Map;
+
+/**
+ * Redis 连接工具类
+ */
 public class RedisConnector {
 
     // 由配置类注入
     @Setter
     private static RedisTemplate<String, Object> redisTemplate;
+    
+    // 保留 ObjectMapper 引用，以便在需要时进行复杂类型转换
+    private static ObjectMapper objectMapper;
+
+    /**
+     * 初始化 HashMapper (实际仅初始化 ObjectMapper)
+     */
+    public static void initHashMapper(ObjectMapper objectMapper) {
+        Assert.notNull(objectMapper, "ObjectMapper must not be null");
+        RedisConnector.objectMapper = objectMapper;
+    }
+    
+    // ===================== 对象 <-> Hash 转换操作 =====================
+
+    /**
+     * 将对象直接存为 Hash
+     */
+    public static void setHashObject(String key, Object object) {
+        if (object == null || objectMapper == null) {
+            return;
+        }
+        // 使用 ObjectMapper 转 Map，确保与 JSON 序列化行为一致
+        Map<String, Object> map = objectMapper.convertValue(object, new TypeReference<Map<String, Object>>() {});
+        redisTemplate.opsForHash().putAll(key, map);
+    }
+
+    /**
+     * 将 Hash 直接转为对象
+     */
+    public static <T> T getHashObject(String key, Class<T> clazz) {
+        if (objectMapper == null) return null;
+        Map<Object, Object> rawMap = redisTemplate.opsForHash().entries(key);
+        if (rawMap.isEmpty()) {
+            return null;
+        }
+        // 直接使用 ObjectMapper 将 Map 转回对象
+        return objectMapper.convertValue(rawMap, clazz);
+    }
+
+    /**
+     * 获取 Hash 中的单个字段并自动转换类型
+     */
+    public static <T> T getHashField(String key, String field, Class<T> targetClass) {
+        Object value = redisTemplate.opsForHash().get(key, field);
+        if (value == null) return null;
+        
+        // 尝试直接转换
+        try {
+            return objectMapper.convertValue(value, targetClass);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    /**
+     * 获取 Hash 中的单个字段并自动转换类型 (支持 TypeReference, 用于复杂泛型如 List<ProductSpec>)
+     */
+    public static <T> T getHashField(String key, String field, TypeReference<T> typeReference) {
+        Object value = redisTemplate.opsForHash().get(key, field);
+        if (value == null) return null;
+
+        try {
+            return objectMapper.convertValue(value, typeReference);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
 
     // ===================== 静态获取各种操作 =====================
 

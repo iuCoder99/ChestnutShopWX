@@ -30,11 +30,56 @@ public class RedisKeyGenerator {
 
     /**
      * banner 轮播图
+     * banner:all
      * @return
      */
     public static String banner(){
         return RedisConstant.PREFIX_BANNER +RedisConstant.ALL;
 
     }
+
+    /**
+     * hotProduct RedisKey
+     * product:hot
+     * @return
+     */
+    public static String hotProductKey(){
+        return RedisConstant.PREFIX_PRODUCT + RedisConstant.HOT ;
+    }
+
+    /**
+     * hotProduct HashKey
+     * id: + hotProductId
+     * @param hotProductId
+     * @return
+     */
+    public static String hotProductHashKey(Long hotProductId){
+        return RedisConstant.ID + hotProductId;
+    }
+
+    /**
+     * hotProductIdList
+     * product: + hot: + idList
+     * @return
+     */
+    public static String hotProductIdList(){
+        return RedisConstant.PREFIX_PRODUCT + RedisConstant.HOT + ":" + RedisConstant.ID_LIST;
+    }
+
+    /**
+     * productDetail
+     * product: + detail: + productId
+     * @param productId
+     * @return
+     */
+    public static String productDetail(Long productId){
+        return RedisConstant.PREFIX_PRODUCT + RedisConstant.DETAIL + productId;
+    }
+
+    public static String productCollection(Long productId){
+        return RedisConstant.PREFIX_PRODUCT + RedisConstant.COLLECTION + productId;
+
+    }
+
 
 }

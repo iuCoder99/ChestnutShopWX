@@ -1,7 +1,6 @@
 package com.app.uni_app.config;
 
 import com.app.uni_app.common.constant.CaffeineConstant;
-import com.app.uni_app.pojo.entity.Category;
 import com.app.uni_app.service.impl.CategoryServiceImpl;
 import com.app.uni_app.service.impl.ProductSearchKeywordServiceImpl;
 import com.github.benmanes.caffeine.cache.Cache;
@@ -25,7 +24,6 @@ public class CaffeineConfig {
 
     @Resource
     private CategoryServiceImpl categoryServiceImpl;
-    ;
 
     /**
      * 商品搜索关键词缓存
@@ -52,13 +50,13 @@ public class CaffeineConfig {
      *分类树(一级分类,二级分类)缓存
      */
     @Bean
-    public LoadingCache<String, List<Category>> categoryTreeCache() {
+    public LoadingCache<String, List<com.app.uni_app.pojo.entity.Category>> categoryTreeCache() {
         return Caffeine.newBuilder()
                 .initialCapacity(1)
                 .maximumSize(1)
                 .build(new CacheLoader<>() {
                     @Override
-                    public @Nullable List<Category> load(String key) throws IllegalArgumentException {
+                    public @Nullable List<com.app.uni_app.pojo.entity.Category> load(String key) throws IllegalArgumentException {
                         if (StringUtils.equals(key, CaffeineConstant.CACHE_KEY_CATEGORY_TREE)) {
                             return categoryServiceImpl.getCategoryTreeCache();
                         }

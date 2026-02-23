@@ -5,6 +5,7 @@ import com.app.uni_app.pojo.emums.CommonStatus;
 import com.baomidou.mybatisplus.annotation.*;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
+import lombok.experimental.FieldNameConstants;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.io.Serial;
@@ -22,6 +23,7 @@ import java.util.List;
  */
 @Data
 @TableName(value = "product")
+@FieldNameConstants
 public class Product implements Serializable {
 
     @Serial
@@ -103,7 +105,7 @@ public class Product implements Serializable {
      * 是否收藏,0-否,1-是
      */
     @TableField(exist = false)
-    private Long isCollection;
+    private Integer isCollection;
 
     /**
      * 商品图片 URL 列表

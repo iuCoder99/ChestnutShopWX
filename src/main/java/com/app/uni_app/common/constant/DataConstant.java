@@ -15,6 +15,7 @@ public class DataConstant {
     public static final int ONE_INT = 1;
     public static final long ZERO_LONG = 0L;
     public static final long ONE_LONG = 1L;
+    public static final String NEGATIVE_ONE_STRING = "-1";
 
 
 }

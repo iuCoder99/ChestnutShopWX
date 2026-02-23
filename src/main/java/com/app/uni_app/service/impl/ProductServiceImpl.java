@@ -7,20 +7,29 @@ import com.app.uni_app.common.constant.MessageConstant;
 import com.app.uni_app.common.mapstruct.CopyMapper;
 import com.app.uni_app.common.result.PageResult;
 import com.app.uni_app.common.result.Result;
+import com.app.uni_app.common.util.BloomFilterUtils;
 import com.app.uni_app.common.util.CaffeineUtils;
+import com.app.uni_app.common.util.JacksonUtils;
 import com.app.uni_app.common.util.SessionUtils;
+import com.app.uni_app.infrastructure.redis.connect.RedisConnector;
+import com.app.uni_app.infrastructure.redis.connect.StringRedisConnector;
+import com.app.uni_app.infrastructure.redis.generator.RedisKeyGenerator;
+import com.app.uni_app.infrastructure.redis.properties.RedisKeyTtlProperties;
 import com.app.uni_app.mapper.ProductMapper;
 import com.app.uni_app.pojo.emums.CommonStatus;
 import com.app.uni_app.pojo.emums.ProductSortType;
 import com.app.uni_app.pojo.entity.Product;
+import com.app.uni_app.pojo.entity.ProductCollection;
 import com.app.uni_app.pojo.entity.ProductSpec;
 import com.app.uni_app.pojo.vo.ProductSpecVO;
 import com.app.uni_app.pojo.vo.SimpleProductVO;
+import com.app.uni_app.service.CollectionService;
 import com.app.uni_app.service.ProductService;
 import com.app.uni_app.service.ProductSpecService;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.fasterxml.jackson.core.type.TypeReference;
 import jakarta.annotation.Resource;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -28,6 +37,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -45,6 +55,9 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
     private ProductSpecService productSpecService;
 
     @Resource
+    private CollectionService collectionService;
+
+    @Resource
     private CopyMapper copyMapper;
 
     @Resource
@@ -52,6 +65,12 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
 
     @Resource
     private CaffeineUtils caffeineUtils;
+
+    @Resource
+    private BloomFilterUtils bloomFilterUtils;
+
+    @Resource
+    private RedisKeyTtlProperties redisKeyTtlProperties;
 
     private static final String PRODUCT_LIST = "productList";
     private static final String END_PRODUCT_ID = "endProductId";
@@ -64,10 +83,33 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
      */
     @Override
     public Result getHotProduct(Integer limit) {
-        List<Product> hotProducts = productMapper.selectOrderByDescSalesCountLimit(limit);
+        String hotProductKey = RedisKeyGenerator.hotProductKey();
+        Map<String, Object> hotProductMap = RedisConnector.opsForHash().entries(hotProductKey);
+        List<Product> hotProducts;
+        if (hotProductMap.isEmpty()) {
+            hotProducts = productMapper.selectOrderByDescSalesCountLimit(limit);
+            List<Long> hotProductIdList = new ArrayList<>(hotProducts.size());
+            Map<String, Object> redisMap = new HashMap<>(hotProducts.size());
+            for (Product hotProduct : hotProducts) {
+                Long hotProductId = hotProduct.getId();
+                String hashKey = RedisKeyGenerator.hotProductHashKey(hotProductId);
+                hotProductIdList.add(hotProductId);
+                redisMap.put(hashKey, hotProduct);
+            }
+            String hotProductIdListJson = JacksonUtils.toJson(hotProductIdList);
+            StringRedisConnector.opsForValue().set(RedisKeyGenerator.hotProductIdList(), hotProductIdListJson);
+            RedisConnector.opsForHash().putAll(hotProductKey, redisMap);
+        } else {
+            hotProducts = hotProductMap.values().stream()
+                    .map(hotProduct -> (Product) hotProduct)
+                    .sorted(Comparator.comparing(Product::getSalesCount).reversed())
+                    .collect(Collectors.toList());
+        }
         List<SimpleProductVO> simpleProductVOs = hotProducts.stream()
                 .map(hotProduct -> copyMapper.productToSimpleProductVO(hotProduct)).toList();
         return Result.success(simpleProductVOs);
+
+
     }
 
     /**
@@ -100,17 +142,53 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         if (StringUtils.isBlank(productId)) {
             return Result.error(MessageConstant.TOM_CAT_ERROR);
         }
+        if (!bloomFilterUtils.contains(Long.valueOf(productId))) {
+            return Result.error(MessageConstant.DATA_ERROR);
+        }
         if (StringUtils.isBlank(userId)) {
-            userId = "-1";
+            userId = DataConstant.NEGATIVE_ONE_STRING;
         }
-        Product product = productMapper.selectByProductId(productId, userId);
-        if (Objects.isNull(product)) {
-            return Result.error(MessageConstant.TOM_CAT_ERROR);
+        String productDetailKey = RedisKeyGenerator.productDetail(Long.valueOf(productId));
+        String productCollectionKey = RedisKeyGenerator.productCollection(Long.valueOf(productId));
+        Map<String, Object> productDetailMap = RedisConnector.opsForHash().entries(productDetailKey);
+        Set<Object> userIdSet = RedisConnector.opsForSet().members(productCollectionKey);
+        if (productDetailMap.isEmpty()) {
+            Product product = productMapper.selectByProductId(productId, userId);
+            //空对象
+            if (Objects.isNull(product)) {
+                StringRedisConnector.opsForHash().putAll(productDetailKey, Map.of(Product.Fields.id, productId));
+                return Result.error(MessageConstant.DATA_ERROR);
+            }
+            if (!StringUtils.equals(product.getIsCollection().toString(), CommonStatus.INACTIVE.getNumber().toString())) {
+                product.setIsCollection(CommonStatus.ACTIVE.getNumber());
+            }
+            Map<String, Object> productDetailResultMap = JacksonUtils.toMap(product);
+            productDetailResultMap.put(Product.Fields.isCollection, CommonStatus.INACTIVE.getNumber());
+            RedisConnector.opsForHash().putAll(productDetailKey, productDetailResultMap);
+            StringRedisConnector.expire(productDetailKey, redisKeyTtlProperties.getProductDetailTtl(), TimeUnit.SECONDS);
+            return Result.success(product);
+
         }
-        if (!StringUtils.equals(product.getIsCollection().toString(), "0")) {
-            product.setIsCollection(1L);
+        //对空对象二次访问拦截
+        if (productDetailMap.size() == 1) {
+            return Result.error(MessageConstant.DATA_ERROR);
+
         }
-        return Result.success(product);
+        if (CollectionUtils.isEmpty(userIdSet)) {
+            List<ProductCollection> productCollectionList = collectionService.lambdaQuery().eq(ProductCollection::getProductId, productId).list();
+            userIdSet = productCollectionList.stream().map(ProductCollection::getUserId).collect(Collectors.toSet());
+            RedisConnector.opsForSet().add(productCollectionKey, userIdSet);
+            RedisConnector.expire(productDetailKey, redisKeyTtlProperties.getProductCollectionTtl(), TimeUnit.SECONDS);
+
+        }
+        Product resultProduct = JacksonUtils.fromMap(productDetailMap, Product.class);
+        if (userIdSet.contains(Long.valueOf(userId))) {
+            resultProduct.setIsCollection(CommonStatus.ACTIVE.getNumber());
+        } else {
+            resultProduct.setIsCollection(CommonStatus.INACTIVE.getNumber());
+
+        }
+        return Result.success(resultProduct);
     }
 
     /**
@@ -177,9 +255,34 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
      */
     @Override
     public Result getProductSpecPrice(String productId, String specId) {
-        ProductSpec productSpec = productSpecService.lambdaQuery().eq(ProductSpec::getProductId, productId)
-                .eq(ProductSpec::getId, specId).one();
-        ProductSpecVO productSpecVO = copyMapper.productSpecToProductSpecVO(productSpec);
+        if (!bloomFilterUtils.contains(Long.valueOf(productId))) {
+            return null;
+        }
+        String key = RedisKeyGenerator.productDetail(Long.valueOf(productId));
+        List<ProductSpec> productSpecList = RedisConnector
+                .getHashField(key, Product.Fields.specList, new TypeReference<>() {});
+        if (Objects.isNull(productSpecList)) {
+            String userId = DataConstant.NEGATIVE_ONE_STRING;
+            Product product = productMapper.selectByProductId(productId, userId);
+            RedisConnector.setHashObject(key,product);
+            productSpecList = product.getSpecList();
+
+        }
+        if (productSpecList.isEmpty()) {
+            return Result.error(MessageConstant.DATA_ERROR);
+
+        }
+        ProductSpec resultProductSpec = null;
+        for (ProductSpec productSpec : productSpecList) {
+            if (StringUtils.equals(productSpec.getId().toString(), specId)) {
+                resultProductSpec = productSpec;
+            }
+        }
+        if (Objects.isNull(resultProductSpec)) {
+            return Result.error(MessageConstant.DATA_ERROR);
+
+        }
+        ProductSpecVO productSpecVO = copyMapper.productSpecToProductSpecVO(resultProductSpec);
         return Result.success(productSpecVO);
     }
 
@@ -227,7 +330,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         Long maxProductIdInDataOrDefault = maxAndMinProductIdInData.getOrDefault(CaffeineConstant.MAP_KEY_MAX_PRODUCT_ID_IN_DATA, DataConstant.ZERO_LONG);
         Long minProductIdInDataOrDefault = maxAndMinProductIdInData.getOrDefault(CaffeineConstant.MAP_KEY_MIN_PRODUCT_ID_IN_DATA, DataConstant.ZERO_LONG);
         if (scrollLoadedEndId.equals(DataConstant.ZERO_LONG)) {
-            if (maxProductIdInDataOrDefault.equals(DataConstant.ZERO_LONG)){
+            if (maxProductIdInDataOrDefault.equals(DataConstant.ZERO_LONG)) {
                 return Result.success(CollectionUtils.emptyCollection());
             }
             long bound = Math.round(maxProductIdInDataOrDefault * DataConstant.QUERY_SECURITY_NUMBER);
@@ -246,7 +349,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         sessionUtils.setScrollLoadedEndId(scrollLoadedEndId);
         List<SimpleProductVO> simpleProductVOS = productList.stream().map(product -> copyMapper.productToSimpleProductVO(product)).collect(Collectors.toList());
         Collections.shuffle(simpleProductVOS);
-        if (scrollLoadedEndId.equals(minProductIdInDataOrDefault)){
+        if (scrollLoadedEndId.equals(minProductIdInDataOrDefault)) {
             sessionUtils.removeLoadedIdSet();
             sessionUtils.removeScrollLoadedEndId();
         }
