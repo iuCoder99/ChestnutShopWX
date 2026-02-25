@@ -1,5 +1,6 @@
 package com.app.uni_app.infrastructure.thread.ThreadPoolConfig;
 
+import com.app.uni_app.infrastructure.thread.ThreadPoolConstant.ThreadPoolConstant;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -8,12 +9,12 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadPoolExecutor;
 
 @Configuration
-public class PayExceptionThreadPool {
+public class SaveCartCacheThreadPoolConfig {
     /**
      * 核心线程数：线程池常驻的最小线程数，即使空闲也不会被回收（除非设置了allowCoreThreadTimeOut）
      * 推荐值：CPU密集型任务（核心线程数 = CPU核心数 + 1）；IO密集型任务（核心线程数 = CPU核心数 * 2）
      */
-    private static final int CORE_POOL_SIZE = 4;
+    private static final int CORE_POOL_SIZE = 3;
 
     /**
      * 最大线程数：线程池能容纳的最大线程数，当任务队列满了之后，会创建新线程执行任务
@@ -30,12 +31,14 @@ public class PayExceptionThreadPool {
      */
     private static final int KEEP_ALIVE_SECONDS = 60;
 
+    private static final String THREAD_NAME = "Save-Cart-Cache-";
+
     /**
      * 线程池Bean名称（可通过@Qualifier("businessThreadPool")指定注入）
      * @return 线程池执行器
      */
-    @Bean(name = "solvePayExceptionThreadPool")
-    public Executor solvePayExceptionThreadPool() {
+    @Bean(name = "saveCartRedisCacheToMysqlThreadPool")
+    public Executor saveCartRedisCacheToMysqlThreadPool() {
         // Spring提供的ThreadPoolTaskExecutor，封装了原生ThreadPoolExecutor，更易用
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         // 设置核心线程数
@@ -46,8 +49,8 @@ public class PayExceptionThreadPool {
         executor.setQueueCapacity(QUEUE_CAPACITY);
         // 设置空闲线程存活时间
         executor.setKeepAliveSeconds(KEEP_ALIVE_SECONDS);
-        // 设置线程名称前缀（便于日志排查问题，非常重要！）
-        executor.setThreadNamePrefix("Business-Thread-");
+        // 设置线程名称前缀
+        executor.setThreadNamePrefix(ThreadPoolConstant.PREFIX_BUSINESS_THREAD+THREAD_NAME);
         // 设置任务拒绝策略：当线程池和队列都满了，如何处理新任务
         // ThreadPoolExecutor.CallerRunsPolicy：由提交任务的线程自己执行（避免任务丢失，企业开发常用）
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());

@@ -76,10 +76,35 @@ public class RedisKeyGenerator {
         return RedisConstant.PREFIX_PRODUCT + RedisConstant.DETAIL + productId;
     }
 
+    /**
+     * productCollection
+     * product: + collection: + productId
+     * @param productId
+     * @return
+     */
     public static String productCollection(Long productId){
         return RedisConstant.PREFIX_PRODUCT + RedisConstant.COLLECTION + productId;
 
     }
 
+    /**
+     * cartKey 用户购物车
+     * cart: + user: + userId
+     * @param userId
+     * @return
+     */
+    public static String cartKey(Long userId){
+        return RedisConstant.PREFIX_CART + RedisConstant.USER +userId;
+    }
+
+    /**
+     * cartHashKey
+     * product: + productId + "," + productSpec + specId
+     * @return
+     */
+    public static String cartHashKey(String productId , String specId){
+        return RedisConstant.PRODUCT + productId + "," + RedisConstant.PRODUCT_SPEC + specId;
+
+    }
 
 }

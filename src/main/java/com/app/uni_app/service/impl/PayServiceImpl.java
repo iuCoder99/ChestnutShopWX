@@ -61,6 +61,14 @@ public class PayServiceImpl implements PayService {
                 .build();
 
         // 5. 构造请求体
+        PrepayRequest request = getPrepayRequest(order, user);
+
+        // 6. 调用预下单接口并自动生成前端调起支付所需的签名参数
+        log.info("发起微信预支付请求: {}", order.getOrderNo());
+        return service.prepayWithRequestPayment(request);
+    }
+
+    private PrepayRequest getPrepayRequest(Order order, SysUser user) {
         PrepayRequest request = new PrepayRequest();
         Amount amount = new Amount();
         // 微信支付单位为分
@@ -76,9 +84,6 @@ public class PayServiceImpl implements PayService {
         Payer payer = new Payer();
         payer.setOpenid(user.getOpenid());
         request.setPayer(payer);
-
-        // 6. 调用预下单接口并自动生成前端调起支付所需的签名参数
-        log.info("发起微信预支付请求: {}", order.getOrderNo());
-        return service.prepayWithRequestPayment(request);
+        return request;
     }
 }

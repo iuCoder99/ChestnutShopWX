@@ -1,17 +1,26 @@
 package com.app.uni_app.pojo.entity;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.Accessors;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
  * 购物车商品类
  */
 @Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+@Accessors(chain = true)
 public class CartItem implements Serializable {
 
     @Serial
@@ -39,7 +48,7 @@ public class CartItem implements Serializable {
     /**
      * 单价
      */
-    private Double price;
+    private BigDecimal price;
     /**
      * 库存数量
      */
@@ -68,6 +77,7 @@ public class CartItem implements Serializable {
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime updateTime;
+
 
 
 }

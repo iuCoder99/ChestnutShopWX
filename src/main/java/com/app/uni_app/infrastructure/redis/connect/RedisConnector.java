@@ -6,6 +6,7 @@ import lombok.Setter;
 import org.springframework.data.redis.core.*;
 import org.springframework.util.Assert;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -38,7 +39,7 @@ public class RedisConnector {
             return;
         }
         // 使用 ObjectMapper 转 Map，确保与 JSON 序列化行为一致
-        Map<String, Object> map = objectMapper.convertValue(object, new TypeReference<Map<String, Object>>() {});
+        Map<String, Object> map = objectMapper.convertValue(object, new TypeReference<>() {});
         redisTemplate.opsForHash().putAll(key, map);
     }
 
@@ -84,6 +85,13 @@ public class RedisConnector {
         }
     }
 
+    /**
+     * 通用的管道执行方法，允许自定义多条命令打包
+     */
+    public static List<Object> executePipelined(SessionCallback<?> sessionCallback) {
+        return redisTemplate.executePipelined(sessionCallback);
+    }
+
     // ===================== 静态获取各种操作 =====================
 
     public static ValueOperations<String, Object> opsForValue() {
@@ -119,4 +127,5 @@ public class RedisConnector {
     public static Boolean expire(String key, long timeout, java.util.concurrent.TimeUnit unit) {
         return redisTemplate.expire(key, timeout, unit);
     }
+
 }

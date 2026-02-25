@@ -17,7 +17,7 @@ public interface CopyMapper {
 
     Banner bannerDTOToBanner(BannerDTO bannerDTO);
 
-    Cart cartProductDTOToCart(CartProductDTO cartProductDTO);
+    CartItem cartProductDTOToCartItem(CartProductDTO cartProductDTO);
 
     Category categoryDTOToCategory(CategoryDTO categoryDTO);
 

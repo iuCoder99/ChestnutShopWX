@@ -1,16 +1,24 @@
 package com.app.uni_app.service.impl;
 
 
+import com.app.uni_app.aop.annotation.SaveCartRedisCacheToMysqlAnnotation;
 import com.app.uni_app.common.constant.MessageConstant;
 import com.app.uni_app.common.context.BaseContext;
 import com.app.uni_app.common.mapstruct.CopyMapper;
 import com.app.uni_app.common.result.Result;
+import com.app.uni_app.infrastructure.redis.connect.RedisConnector;
+import com.app.uni_app.infrastructure.redis.generator.RedisKeyGenerator;
+import com.app.uni_app.infrastructure.redis.properties.RedisKeyTtlProperties;
 import com.app.uni_app.mapper.CartMapper;
 import com.app.uni_app.pojo.dto.CartDTO;
 import com.app.uni_app.pojo.dto.CartProductDTO;
+import com.app.uni_app.pojo.emums.CommonStatus;
 import com.app.uni_app.pojo.entity.Cart;
 import com.app.uni_app.pojo.entity.CartItem;
+import com.app.uni_app.pojo.entity.Product;
+import com.app.uni_app.pojo.entity.ProductSpec;
 import com.app.uni_app.service.CartService;
+import com.app.uni_app.service.ProductService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
@@ -21,6 +29,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -31,54 +41,159 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, Cart> implements Ca
     @Resource
     private CopyMapper copyMapper;
 
+    @Resource
+    private ProductService productService;
+
+    @Resource
+    private RedisKeyTtlProperties redisKeyTtlProperties;
+
     private static final String DELETE_IDS = "deletedIds";
     private static final String SUCCESS_COUNT = "successCount";
 
+    //策略:用户操作redis缓存,当进行修改后,触发延迟任务更新缓存到数据库,如果多次更改,以最后一次修改为准
+    //细节:redis里的cart缓存是cartItem完整数据,前端DTO需要后端完善,使用的是productDetail缓存(如果未命中,则更新productDetail缓存)
 
     /**
      * 获取购物车列表
      *
-     * @return
      */
     @Override
     public Result getCartList() {
-        String userid = BaseContext.getUserId();
-        List<CartItem> cartList = cartMapper.getCartList(userid);
+        String userId = BaseContext.getUserId();
+        String cartKey = RedisKeyGenerator.cartKey(Long.valueOf(userId));
+        Map<String, Object> cartMap = RedisConnector.opsForHash().entries(cartKey);
+        List<CartItem> cartList;
+        if (cartMap.isEmpty()) {
+            cartList = cartMapper.getCartList(userId);
+            //TODO 空对象
+            if (cartList.isEmpty()) {
+                return Result.success(CollectionUtils.emptyCollection());
+            }
+            HashMap<String, CartItem> resultMap = new HashMap<>(cartList.size());
+            for (CartItem cartItem : cartList) {
+                String hashKey = RedisKeyGenerator.cartHashKey(cartItem.getProductId(), cartItem.getSpecId());
+                resultMap.put(hashKey, cartItem);
+            }
+            RedisConnector.opsForHash().putAll(cartKey, resultMap);
+            RedisConnector.expire(cartKey, redisKeyTtlProperties.getCartTtl(), TimeUnit.SECONDS);
+            return Result.success(cartList);
+        }
+        cartList = cartMap.values().stream().map(object -> (CartItem) object).toList();
         return Result.success(cartList);
+    }
+
+    private void saveCartListToRedis(List<CartItem> cartList, String cartKey) {
+        HashMap<String, Object> resultMap = new HashMap<>(cartList.size());
+        Set<Long> productIdSet = cartList.stream().map(CartItem::getProductId).map(Long::valueOf).collect(Collectors.toSet());
+        Map<Long, Product> productDetailMap = productService.getProductDetailByProductIdSet(productIdSet);
+        for (CartItem cartItem : cartList) {
+            String productId = cartItem.getProductId();
+            String specId = cartItem.getSpecId();
+            String cartHashKey = RedisKeyGenerator.cartHashKey(productId, specId);
+            cartItem = replenishCartItem(productDetailMap, cartItem);
+            resultMap.put(cartHashKey, cartItem);
+        }
+        RedisConnector.opsForHash().putAll(cartKey, resultMap);
+        RedisConnector.expire(cartKey, redisKeyTtlProperties.getCartTtl(), TimeUnit.SECONDS);
+    }
+
+    private CartItem replenishCartItem(Map<Long, Product> productDetailMap, CartItem cartItem) {
+        if (Objects.isNull(productDetailMap) || Objects.isNull(cartItem)) {
+            return null;
+
+        }
+        Product product = productDetailMap.get(Long.valueOf(cartItem.getProductId()));
+        List<ProductSpec> specList = product.getSpecList();
+        ProductSpec productSpec = null;
+        for (ProductSpec productSpecTemp : specList) {
+            if (StringUtils.equals(productSpecTemp.getId().toString(), cartItem.getSpecId())) {
+                productSpec = productSpecTemp;
+            }
+        }
+        if (Objects.isNull(productSpec)) {
+            return null;
+
+        }
+        cartItem.setPrice(productSpec.getPrice()).setStock(productSpec.getStock())
+                .setProductName(product.getName()).setProductImage(product.getImage())
+                .setSpecText(productSpec.getSpecText());
+        return cartItem;
     }
 
     /**
      * 添加商品到购物车
      *
-     * @param cartProductDTO
-     * @return
      */
     @Override
-    @Transactional(rollbackFor = Exception.class)
+    @SaveCartRedisCacheToMysqlAnnotation
     public Result addProductToCart(CartProductDTO cartProductDTO) {
         String userId = BaseContext.getUserId();
         String productId = cartProductDTO.getProductId();
         String specId = cartProductDTO.getSpecId();
-        CartItem cartItem = cartMapper.getCartItem(userId, productId, specId);
-        if (Objects.isNull(cartItem)) {
-            Cart cart = Cart.builder().userId(Long.valueOf(userId))
-                    .productId(Long.valueOf(productId))
-                    .specId(Long.valueOf(specId))
-                    .quantity(cartProductDTO.getQuantity()).build();
-            save(cart);
-            return Result.success(cart.getId());
+        Integer quantity = cartProductDTO.getQuantity();
+        String cartKey = RedisKeyGenerator.cartKey(Long.valueOf(userId));
+        String cartHashKey = RedisKeyGenerator.cartHashKey(productId, specId);
+        Map<String, Object> redisCacheMap = RedisConnector.opsForHash().entries(cartKey);
+        //缓存没有该用户的购物车信息,将用户购物车信息查询出更新缓存,然后进行添加
+        if (redisCacheMap.isEmpty()) {
+            List<CartItem> cartList = cartMapper.getCartList(userId);
+            //用户数据库购物车为空
+            if (Objects.isNull(cartList) || cartList.isEmpty()) {
+                CartItem cartItem = CartItem.builder().userId(userId).productId(productId)
+                        .specId(specId).quantity(cartProductDTO.getQuantity()).build();
+                Map<Long, Product> productDetailMap = productService.getProductDetailByProductIdSet(Set.of(Long.valueOf(productId)));
+                cartItem = replenishCartItem(productDetailMap, cartItem);
+                if (Objects.isNull(cartItem)) {
+                    return Result.error(MessageConstant.DATA_ERROR);
+
+                }
+                RedisConnector.opsForHash().put(cartKey, cartHashKey, cartItem);
+                RedisConnector.expire(cartKey, redisKeyTtlProperties.getCartTtl(), TimeUnit.SECONDS);
+                return Result.success();
+
+            }
+            //用户数据库购物车不为空
+            boolean isFind = false;
+            for (CartItem item : cartList) {
+                if (StringUtils.equals(productId, item.getProductId()) && StringUtils.equals(specId, item.getSpecId())) {
+                    isFind = true;
+                    item.setQuantity(item.getQuantity() + quantity);
+
+                }
+            }
+            if (!isFind) {
+                CartItem cartItem = CartItem.builder().userId(userId).productId(productId)
+                        .specId(specId).quantity(cartProductDTO.getQuantity()).build();
+                cartList.add(cartItem);
+
+            }
+            saveCartListToRedis(cartList, cartKey);
+            return Result.success();
+
         }
-        Integer quantityCartHave = cartItem.getQuantity();
-        quantityCartHave = cartProductDTO.getQuantity() + quantityCartHave;
-        cartMapper.updateCartItemQuantity(userId, productId, specId, quantityCartHave);
-        return Result.success(cartItem.getId());
+        //命中缓存
+        CartItem cartItem;
+        if (redisCacheMap.containsKey(cartHashKey)) {
+            cartItem = (CartItem) redisCacheMap.get(cartHashKey);
+            cartItem.setQuantity(cartItem.getQuantity() + quantity);
+        } else {
+            cartItem = CartItem.builder().userId(userId).productId(productId)
+                    .specId(specId).quantity(cartProductDTO.getQuantity()).build();
+            Map<Long, Product> productDetailMap = productService.getProductDetailByProductIdSet(Set.of(Long.valueOf(productId)));
+            cartItem = replenishCartItem(productDetailMap, cartItem);
+
+        }
+        redisCacheMap.put(cartHashKey, cartItem);
+        RedisConnector.opsForHash().putAll(cartKey, redisCacheMap);
+        RedisConnector.expire(cartKey, redisKeyTtlProperties.getCartTtl(), TimeUnit.SECONDS);
+        return Result.success();
+
 
     }
 
     /**
      * 清空购物车
-     *
-     * @return
+     *(未使用)
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -100,10 +215,7 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, Cart> implements Ca
 
     /**
      * 批量删除购物车商品(单个+批量)
-     *
-     * @param productIds
-     * @param specIds
-     * @return
+     *(未使用)
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -148,24 +260,56 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, Cart> implements Ca
 
 
     /**
-     * 将前端的购物车数据(List)更新到数据库
+     * 将前端的购物车数据(List)更新到Redis
      *
-     * @param cartDTO
-     * @return
      */
     @Override
-    @Transactional(rollbackFor = Exception.class)
+    @SaveCartRedisCacheToMysqlAnnotation
     public Result mergeCart(CartDTO cartDTO) {
         List<CartProductDTO> carts = cartDTO.getCartItems();
         if (CollectionUtils.isEmpty(carts)) {
             return Result.success();
         }
         String userId = BaseContext.getUserId();
-        List<Cart> cartList = carts.stream().map(cartProductDTO -> copyMapper.cartProductDTOToCart(cartProductDTO))
-                .peek(cart -> cart.setUserId(Long.valueOf(userId))).toList();
-        remove(new LambdaQueryWrapper<Cart>().eq(Cart::getUserId, userId));
-        saveBatch(cartList);
+        String cartKey = RedisKeyGenerator.cartKey(Long.valueOf(userId));
+        List<CartItem> cartItemList = carts.stream()
+                .map(cartProductDTO -> copyMapper.cartProductDTOToCartItem(cartProductDTO))
+                .peek(cartItem -> cartItem.setUserId(userId)).toList();
+        RedisConnector.delete(cartKey);
+        saveCartListToRedis(cartItemList, cartKey);
         return Result.success(carts);
+    }
+
+    /**
+     * 将 Redis 缓存中的购物车同步到 MySQL
+     *
+     * @param userId 用户ID
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void syncCartToMysql(String userId) {
+        String cartKey = RedisKeyGenerator.cartKey(Long.valueOf(userId));
+        Map<String, Object> cartMap = RedisConnector.opsForHash().entries(cartKey);
+
+        lambdaUpdate().eq(Cart::getUserId, userId).remove();
+
+
+        if (cartMap.isEmpty()) {
+            return;
+        }
+
+        List<Cart> cartList = cartMap.values().stream()
+                .map(obj -> (CartItem) obj)
+                .map(item -> Cart.builder()
+                        .userId(Long.valueOf(userId))
+                        .productId(Long.valueOf(item.getProductId()))
+                        .specId(Long.valueOf(item.getSpecId()))
+                        .quantity(item.getQuantity())
+                        .checked(CommonStatus.INACTIVE.getNumber())
+                        .build())
+                .toList();
+
+        saveBatch(cartList);
     }
 
 

@@ -139,6 +139,13 @@
             #{productId}
         </foreach>
     </select>
+    <select id="getProductDetailByProductIdSet" resultMap="ProductWithImageAndSpecResultMap">
+        <include refid="selectAllProductWithImageAndSpec_Where_SQL"/>
+        and p.id in
+        <foreach collection="productIdSet" open="(" close=")" separator="," item="productId">
+        #{productId}
+        </foreach>
+    </select>
 
 
     <sql id="selectSimpleAllProduct_Where_SQL">

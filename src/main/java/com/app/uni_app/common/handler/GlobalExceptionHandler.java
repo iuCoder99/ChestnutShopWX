@@ -95,7 +95,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler
     public Result globalExceptionHandler(Exception e) {
-     //   log.error("完整异常栈:", e);
+        log.error("完整异常栈:", e);
         log.error("globalExceptionHandler拦截到:{};异常信息:{}", e.getClass(), e.getMessage());
         return Result.error(MessageConstant.TOM_CAT_ERROR);
     }

@@ -6,6 +6,9 @@ import com.app.uni_app.pojo.entity.Product;
 import com.baomidou.mybatisplus.extension.service.IService;
 import jakarta.validation.constraints.NotBlank;
 
+import java.util.Map;
+import java.util.Set;
+
 /**
  * @author 20589
  * @description 针对表【product(商品表)】的数据库操作Service
@@ -30,5 +33,7 @@ public interface ProductService extends IService<Product> {
     Result getCategoryProductList(@NotBlank String categoryId, String beginProductId);
 
     Result getSimpleProductByScrollQuery();
+
+    Map<Long,Product>  getProductDetailByProductIdSet(Set<Long> productIdSet);
 }
 

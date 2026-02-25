@@ -30,9 +30,13 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.fasterxml.jackson.core.type.TypeReference;
+import jakarta.annotation.Nonnull;
 import jakarta.annotation.Resource;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.dao.DataAccessException;
+import org.springframework.data.redis.core.RedisOperations;
+import org.springframework.data.redis.core.SessionCallback;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -191,6 +195,69 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         return Result.success(resultProduct);
     }
 
+
+    /**
+     * 根据 productIdSet 返回 productId与product映射Map集
+     * 其中会更新redis缓存
+     */
+    @SuppressWarnings("unchecked")
+    @Override
+    public Map<Long, Product> getProductDetailByProductIdSet(Set<Long> productIdSet) {
+        productIdSet = new HashSet<>(productIdSet);
+        if (productIdSet.isEmpty()) {
+            return new HashMap<>(0);
+        }
+        List<String> keyList = productIdSet.stream().map(RedisKeyGenerator::productDetail).toList();
+        List<Object> result = RedisConnector.executePipelined(new SessionCallback<>() {
+            @Override
+            public <K, V> Object execute(@Nonnull RedisOperations<K, V> operations) throws DataAccessException {
+                for (String key : keyList) {
+                    operations.opsForHash().entries((K) key);
+                }
+                return null;
+            }
+        });
+        if (result.isEmpty()) {
+            List<Product> productList = getProductDetailAndSaveCacheByProductIdSet(productIdSet);
+            return productListToMap(productList);
+        }
+        List<Product> redisProductList = result.stream().map(obj -> (Map<String, Object>) obj)
+                .map(map -> JacksonUtils.fromMap(map, Product.class))
+                .collect(Collectors.toList());
+        Set<Long> redisProductIdSet = redisProductList.stream().map(Product::getId).collect(Collectors.toSet());
+        productIdSet.removeAll(redisProductIdSet);
+        if (productIdSet.isEmpty()) {
+            return productListToMap(redisProductList);
+
+        }
+        List<Product> productList = getProductDetailAndSaveCacheByProductIdSet(productIdSet);
+        redisProductList.addAll(productList);
+        return productListToMap(redisProductList);
+
+    }
+
+    private Map<Long, Product> productListToMap(List<Product> productList) {
+        if (Objects.isNull(productList) || productList.isEmpty()) {
+            return new HashMap<>(0);
+
+        }
+        HashMap<Long, Product> resultMap = new HashMap<>(productList.size());
+        for (Product product : productList) {
+            resultMap.put(product.getId(), product);
+        }
+        return resultMap;
+    }
+
+
+    private List<Product> getProductDetailAndSaveCacheByProductIdSet(Set<Long> productIdSet) {
+        List<Product> productList = productMapper.getProductDetailByProductIdSet(productIdSet);
+        for (Product product : productList) {
+            String key = RedisKeyGenerator.productDetail(product.getId());
+            RedisConnector.setHashObject(key, product);
+        }
+        return productList;
+    }
+
     /**
      * 获取商品列表
      *
@@ -260,11 +327,12 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         }
         String key = RedisKeyGenerator.productDetail(Long.valueOf(productId));
         List<ProductSpec> productSpecList = RedisConnector
-                .getHashField(key, Product.Fields.specList, new TypeReference<>() {});
+                .getHashField(key, Product.Fields.specList, new TypeReference<>() {
+                });
         if (Objects.isNull(productSpecList)) {
             String userId = DataConstant.NEGATIVE_ONE_STRING;
             Product product = productMapper.selectByProductId(productId, userId);
-            RedisConnector.setHashObject(key,product);
+            RedisConnector.setHashObject(key, product);
             productSpecList = product.getSpecList();
 
         }
