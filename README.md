@@ -1,9 +1,16 @@
-个人全栈项目:shopWX (电商类)
-前端:uniapp+vue3
-后端:JDK 17  
-主流框架:springboot , mysql , mybatis , mybatisPlus , shiro , redis , Netty , caffeine , session
-工具类:Lombok , Apache Commons  , MapStruct 
-后期升级:springcloud , springAI
+# 项目经验
+## 栗子商城
+**担任角色**：全栈开发
+**技术栈**：Spring Boot 3.x、Java 17、MySQL、MyBatis、MyBatis-Plus、Redis、Shiro、Netty、Caffeine；Lombok、Apache Commons、MapStruct、Jackson
+**项目描述**：基于主流电商平台原型，搭建前后端分离的B2C电商系统，覆盖商品管理、购物车、订单管理、用户权限及在线客服等核心业务场景，兼顾系统性能、数据安全与开发效率，全程参与需求梳理、技术选型、编码实现及问题优化，独立负责多个核心模块的开发与调试。
+
+### 核心职责与成果
+1. 基于Spring Boot 3.x与Java 17技术栈构建系统架构，完成前后端分离交互适配，落地商品管理、购物车、订单管理等核心业务模块，保障各模块高效联动、稳定运行。
+2. 负责身份认证与权限控制模块开发，采用Apache Shiro + Redis + Jwt + 双Token方案实现身份认证与权限管控，通过Redis实现账号封禁过滤，借助双Token机制完成Jwt无感续期，提升系统安全性与用户体验。
+3. 优化数据库交互性能，结合MyBatis与MyBatis-Plus实现高效数据操作：单表查询及分页功能采用MyBatis-Plus简化开发，多表关联查询通过MyBatis ResultMap实现精准映射，同时对SQL语句进行索引优化，有效减少数据库IO开销，提升查询效率。
+4. 设计并实现多级缓存策略，针对分类树、搜索词等热点数据使用Caffeine实现本地服务器缓存，针对轮播图、商品详情、购物车等数据采用Redis实现分布式缓存；引入布隆过滤器、空对象缓存解决缓存穿透问题，通过逻辑过期策略应对缓存击穿与雪崩，大幅提升系统响应速度。
+5. 优化系统并发能力与任务调度效率：自定义业务线程池，通过异步线程处理订单取消、数据更新等定时任务；利用Redisson延迟队列、阻塞队列实现购物车Redis缓存的延迟防抖更新，保障缓存与数据库数据一致性；基于Netty构建高并发在线客服系统，解决长连接心跳保活、消息离线存储等核心问题，支撑多用户同时在线沟通。
+6. 引入Lombok、MapStruct、Apache Commons等工具库，简化代码编写、提升代码可维护性与开发效率；参与数据库表结构设计、接口文档编写，具备独立处理项目需求变更、技术栈平替适配的能力，保障项目顺利推进。
 
 
 本仓库存储项目后端代码
