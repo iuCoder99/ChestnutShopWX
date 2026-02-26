@@ -121,7 +121,7 @@ public class LoginController {
      */
     @PostMapping("/refresh/token")
     @Operation(summary = "刷新 token", description ="返回新认证token和新刷新token,如果返回值为失败,代表刷新token过期,则需要重新登录" )
-    public Result refreshToken(@CookieValue("refreshToken") @NotBlank String refreshToken) {
+    public Result refreshToken(@RequestParam @NotBlank String refreshToken) {
         return loginService.refreshToken(refreshToken);
     }
 }

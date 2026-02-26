@@ -75,7 +75,7 @@ app:
     admin-ttl: 7200000  # 非敏感，过期时间（毫秒）
     admin-token-name: Authorization  # 非敏感，前端令牌名称      旧数据(token)
     user-secret-key: ${app.jwt.user-secret-key:your_user_jwt_secret_placeholder}
-    user-ttl: 7200000
+    user-ttl: 7200000  #(毫秒)
     user-token-name: Authorization
     login-user-info-in-redis-ttl: 1 #Redis 存储用户登录信息过期时间(天)
     login-refresh-token-ttl: 15 #Redis 存储刷新 token 过期时间(天)
