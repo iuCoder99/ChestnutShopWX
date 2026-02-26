@@ -61,12 +61,14 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, Cart> implements Ca
     public Result getCartList() {
         String userId = BaseContext.getUserId();
         String cartKey = RedisKeyGenerator.cartKey(Long.valueOf(userId));
+        String emptyCartHashKey = RedisKeyGenerator.cartHashKey("0", "0");
         Map<String, Object> cartMap = RedisConnector.opsForHash().entries(cartKey);
         List<CartItem> cartList;
         if (cartMap.isEmpty()) {
             cartList = cartMapper.getCartList(userId);
-            //TODO 空对象
+            // 空对象
             if (cartList.isEmpty()) {
+                RedisConnector.opsForHash().put(cartKey,emptyCartHashKey,"");
                 return Result.success(CollectionUtils.emptyCollection());
             }
             HashMap<String, CartItem> resultMap = new HashMap<>(cartList.size());
@@ -77,6 +79,10 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, Cart> implements Ca
             RedisConnector.opsForHash().putAll(cartKey, resultMap);
             RedisConnector.expire(cartKey, redisKeyTtlProperties.getCartTtl(), TimeUnit.SECONDS);
             return Result.success(cartList);
+        }
+        if (cartMap.containsKey(emptyCartHashKey)){
+            return Result.success(CollectionUtils.emptyCollection());
+
         }
         cartList = cartMap.values().stream().map(object -> (CartItem) object).toList();
         return Result.success(cartList);
