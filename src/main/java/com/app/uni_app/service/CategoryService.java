@@ -24,5 +24,7 @@ public interface CategoryService extends IService<Category> {
 
     Result updateCategoryStatus(String id, String status);
 
+    void updateCategoryTreeRedisCache();
+
 }
 

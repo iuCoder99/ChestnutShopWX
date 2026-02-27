@@ -47,18 +47,12 @@ public class JwtFilter extends AuthenticatingFilter {
     @Override
     protected boolean preHandle(ServletRequest request, ServletResponse response) throws Exception {
         HttpServletRequest httpRequest = WebUtils.toHttp(request);
-        HttpServletResponse httpResponse = WebUtils.toHttp(response);
 
-        // 跨域配置（宽松适配前端）
-        httpResponse.setHeader("Access-Control-Allow-Origin", httpRequest.getHeader("Origin"));
-        httpResponse.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
-        httpResponse.setHeader("Access-Control-Allow-Headers", jwtProperties.getUserTokenName() + ",Content-Type");
-        httpResponse.setHeader("Access-Control-Allow-Credentials", "true");
-        httpResponse.setHeader("Access-Control-Max-Age", "3600");
-
+        // 如果是 OPTIONS 请求，直接放行，不进行后续拦截逻辑
+        // 由于配置了 Ordered.HIGHEST_PRECEDENCE 的 CorsFilter，
+        // 这里的 OPTIONS 处理实际上是作为双重保障。
         if ("OPTIONS".equalsIgnoreCase(httpRequest.getMethod())) {
-            httpResponse.setStatus(HttpServletResponse.SC_OK);
-            return false;
+            return true;
         }
         return super.preHandle(request, response);
     }

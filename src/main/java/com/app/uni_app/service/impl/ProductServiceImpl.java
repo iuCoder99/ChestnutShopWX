@@ -25,7 +25,6 @@ import com.app.uni_app.pojo.vo.ProductSpecVO;
 import com.app.uni_app.pojo.vo.SimpleProductVO;
 import com.app.uni_app.service.CollectionService;
 import com.app.uni_app.service.ProductService;
-import com.app.uni_app.service.ProductSpecService;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -54,9 +53,6 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         implements ProductService {
     @Resource
     private ProductMapper productMapper;
-
-    @Resource
-    private ProductSpecService productSpecService;
 
     @Resource
     private CollectionService collectionService;
@@ -355,7 +351,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
     }
 
     /**
-     * 二级分类页面的商品列表滚动查询
+     * 分类页面的商品列表滚动查询
      *
      * @param categoryId
      * @param beginProductId
@@ -363,6 +359,31 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
      */
     @Override
     public Result getCategoryProductList(String categoryId, String beginProductId) {
+        String hashKey = RedisKeyGenerator.categoryTreeHashKey(Long.valueOf(categoryId));
+        List<Long> secondCategoryIdList = RedisConnector
+                .getHashField(RedisKeyGenerator.categoryTreeKey(), hashKey, new TypeReference<>() {});
+        List<Product> productList;
+        //一级分类 二级分类
+        if (!Objects.isNull(secondCategoryIdList)) {
+            productList = getProducts(secondCategoryIdList, beginProductId);
+
+        } else {
+            productList = getProducts(categoryId, beginProductId);
+        }
+        if (CollectionUtils.isEmpty(productList)) {
+            return Result.success(CollectionUtils.emptyCollection());
+        }
+        List<SimpleProductVO> simpleProductVOs = productList.stream()
+                .map(product -> copyMapper.productToSimpleProductVO(product)).collect(Collectors.toList());
+        String endProductId = simpleProductVOs.get(simpleProductVOs.size() - 1).getId().toString();
+        Collections.shuffle(simpleProductVOs);
+        HashMap<String, Object> resultMap = new HashMap<>(2);
+        resultMap.put(PRODUCT_LIST, simpleProductVOs);
+        resultMap.put(END_PRODUCT_ID, endProductId);
+        return Result.success(resultMap);
+    }
+
+    private List<Product> getProducts(String categoryId, String beginProductId) {
         List<Product> productList;
         if (StringUtils.equals(beginProductId, Integer.toString(DataConstant.ZERO_INT))) {
             productList = lambdaQuery().eq(Product::getCategoryId, categoryId)
@@ -374,16 +395,26 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
                     .lt(Product::getId, beginProductId).orderByDesc(Product::getId)
                     .last("LIMIT " + DataConstant.PRODUCT_SCROLL_QUERY_NUMBER).list();
         }
-        if (CollectionUtils.isEmpty(productList)) {
-            return Result.success();
+        return productList;
+    }
+
+    private List<Product> getProducts(List<Long> categoryIdList, String beginProductId) {
+        if (categoryIdList.isEmpty()){
+            return new ArrayList<>(0);
+
         }
-        List<SimpleProductVO> simpleProductVOs = productList.stream()
-                .map(product -> copyMapper.productToSimpleProductVO(product)).toList();
-        String endProductId = simpleProductVOs.get(simpleProductVOs.size() - 1).getId().toString();
-        HashMap<String, Object> resultMap = new HashMap<>(2);
-        resultMap.put(PRODUCT_LIST, simpleProductVOs);
-        resultMap.put(END_PRODUCT_ID, endProductId);
-        return Result.success(resultMap);
+        List<Product> productList;
+        if (StringUtils.equals(beginProductId, Integer.toString(DataConstant.ZERO_INT))) {
+            productList = lambdaQuery().in(Product::getCategoryId, categoryIdList)
+                    .eq(Product::getStatus, CommonStatus.ACTIVE.getNumber()).orderByDesc(Product::getId)
+                    .last("LIMIT " + DataConstant.PRODUCT_SCROLL_QUERY_NUMBER).list();
+        } else {
+            productList = lambdaQuery().in(Product::getCategoryId, categoryIdList)
+                    .eq(Product::getStatus, CommonStatus.ACTIVE.getNumber())
+                    .lt(Product::getId, beginProductId).orderByDesc(Product::getId)
+                    .last("LIMIT " + DataConstant.PRODUCT_SCROLL_QUERY_NUMBER).list();
+        }
+        return productList;
     }
 
     /**

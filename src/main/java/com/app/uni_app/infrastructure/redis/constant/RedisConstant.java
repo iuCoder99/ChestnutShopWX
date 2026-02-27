@@ -11,11 +11,14 @@ public class RedisConstant {
     public static final String PREFIX_BANNER = "banner:";
     public static final String PREFIX_PRODUCT = "product:";
     public static final String PREFIX_CART = "cart:";
+    public static final String PREFIX_CATEGORY= "category:";
     public static final String PREFIX_ORDER = "order:";
     public static final String USER = "user:";
     public static final String REFRESH = "refresh:";
     public static final String TOKEN = "token:";
     public static final String ID = "id:";
+    public static final String TREE ="tree";
+    public static final String FIRST_CATEGORY = "firstCategory:";
     public static final String DETAIL = "detail:";
     public static final String COLLECTION = "collection:";
     public static final String USER_ID_LIST = "userIdList";

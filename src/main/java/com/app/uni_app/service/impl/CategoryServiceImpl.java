@@ -1,11 +1,14 @@
 package com.app.uni_app.service.impl;
 
 
+import com.app.uni_app.aop.annotation.UpdateCategoryTreeRedisCacheAnnotation;
 import com.app.uni_app.common.constant.DataConstant;
 import com.app.uni_app.common.constant.MessageConstant;
 import com.app.uni_app.common.mapstruct.CopyMapper;
 import com.app.uni_app.common.result.Result;
 import com.app.uni_app.common.util.CaffeineUtils;
+import com.app.uni_app.infrastructure.redis.connect.RedisConnector;
+import com.app.uni_app.infrastructure.redis.generator.RedisKeyGenerator;
 import com.app.uni_app.mapper.CategoryMapper;
 import com.app.uni_app.pojo.dto.CategoryDTO;
 import com.app.uni_app.pojo.emums.CommonStatus;
@@ -108,6 +111,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
      * @return
      */
     @Override
+    @UpdateCategoryTreeRedisCacheAnnotation
     public Result addCategory(CategoryDTO categoryDTO) {
         Category category = copyMapper.categoryDTOToCategory(categoryDTO);
         boolean isSuccess = save(category);
@@ -126,6 +130,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
      * @return
      */
     @Override
+    @UpdateCategoryTreeRedisCacheAnnotation
     public Result deleteCategory(String categoryId) {
         boolean isSuccess = removeById(categoryId);
         if (!isSuccess) {
@@ -143,6 +148,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
      * @return
      */
     @Override
+    @UpdateCategoryTreeRedisCacheAnnotation
     public Result updateCategoryInfo(String id, CategoryDTO categoryDTO) {
         Category category = copyMapper.categoryDTOToCategory(categoryDTO);
         category.setId(Long.valueOf(id));
@@ -162,6 +168,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
      * @return
      */
     @Override
+    @UpdateCategoryTreeRedisCacheAnnotation
     public Result updateCategoryStatus(String id, String status) {
         boolean isSuccess = lambdaUpdate().eq(Category::getId, id).set(Category::getStatus, status).update();
         if (!isSuccess) {
@@ -174,6 +181,26 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
         return Result.success(map);
     }
 
+
+    /**
+     * 更新 categoryTreeId 在 Redis 里的缓存
+     */
+    @Override
+    public void updateCategoryTreeRedisCache() {
+
+        String key = RedisKeyGenerator.categoryTreeKey();
+        RedisConnector.delete(key);
+        List<Category> categoryTree = caffeineUtils.getCategoryTree();
+        HashMap<String, Object> map = new HashMap<>(categoryTree.size());
+        for (Category category : categoryTree) {
+            Long firstCategoryId = category.getId();
+            String hashKey = RedisKeyGenerator.categoryTreeHashKey(firstCategoryId);
+            List<Long> secondCategoryIdList = category.getChildren().stream().map(Category::getId).collect(Collectors.toList());
+            map.put(hashKey, secondCategoryIdList);
+        }
+        RedisConnector.opsForHash().putAll(key, map);
+
+    }
 }
 
 

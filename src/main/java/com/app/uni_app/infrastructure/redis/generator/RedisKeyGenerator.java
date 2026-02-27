@@ -107,4 +107,23 @@ public class RedisKeyGenerator {
 
     }
 
+    /**
+     * categoryTreeKey
+     * category: + tree
+     * @return
+     */
+    public static String categoryTreeKey(){
+        return RedisConstant.PREFIX_CATEGORY + RedisConstant.TREE;
+    }
+
+    /**
+     * categoryTreeHashKey
+     * firstCategory + + firstCategoryId;
+     * @param firstCategoryId
+     * @return
+     */
+    public static String categoryTreeHashKey(Long firstCategoryId){
+        return RedisConstant.FIRST_CATEGORY + firstCategoryId;
+    }
+
 }
