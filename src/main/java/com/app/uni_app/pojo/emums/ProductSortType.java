@@ -8,9 +8,9 @@ public enum ProductSortType {
 
     // default(默认), priceAsc(价格升序), priceDesc(价格降序), newest(最新上架)
     DEFAULT("default", "sales_count DESC", "默认按照销量排行"),
-    PRICE_ASC("priceAsc", "product_price ASC", "价格升序"),
-    PRICE_DESC("priceDesc", "product_price DESC", "价格降序"),
-    NEWEST("newest", "p.update_time DESC", "最新上架");
+    PRICE_ASC("priceAsc", "price ASC", "价格升序"),
+    PRICE_DESC("priceDesc", "price DESC", "价格降序"),
+    NEWEST("newest", "update_time DESC", "最新上架");
     /**
      * 前端传的 String
      */

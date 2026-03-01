@@ -80,7 +80,7 @@ public class ProductController {
      * @return
      */
     @GetMapping("/product/search")
-    @Operation(summary = "搜索商品", description = "分页搜索商品，支持一级分类ID、二级分类ID、关键词筛选，默认页码1、每页80条，默认排序方式为default")
+    @Operation(summary = "搜索商品", description = "分页搜索商品，支持一级分类ID、二级分类ID、关键词筛选，默认页码1、每页80条，默认排序方式为default(销量)")
     public Result searchProductList(@RequestParam(value = "pageNum", defaultValue = "1") Integer pageNum,
                                     @RequestParam(value = "pageSize", defaultValue = "80") Integer pageSize,
                                     @RequestParam(value = "sortType", defaultValue = "default") String sortType,
