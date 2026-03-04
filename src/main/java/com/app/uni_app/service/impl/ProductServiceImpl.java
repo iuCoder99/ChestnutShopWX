@@ -31,6 +31,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.fasterxml.jackson.core.type.TypeReference;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.dao.DataAccessException;
@@ -49,6 +50,7 @@ import java.util.stream.Collectors;
  * @createDate 2025-12-23 19:32:49
  */
 @Service
+@Slf4j
 public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         implements ProductService {
     @Resource
@@ -138,6 +140,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
      * @return
      */
     @Override
+    @SuppressWarnings("unchecked")
     public Result getProductDetail(String productId, String userId) {
         if (StringUtils.isBlank(productId)) {
             return Result.error(MessageConstant.TOM_CAT_ERROR);
@@ -151,7 +154,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         String productDetailKey = RedisKeyGenerator.productDetail(Long.valueOf(productId));
         String productCollectionKey = RedisKeyGenerator.productCollection(Long.valueOf(productId));
         Map<String, Object> productDetailMap = RedisConnector.opsForHash().entries(productDetailKey);
-        Set<Object> userIdSet = RedisConnector.opsForSet().members(productCollectionKey);
+        Set<Object> userIdSet =(Set<Object>)(RedisConnector.opsForValue().get(productCollectionKey));
         if (productDetailMap.isEmpty()) {
             Product product = productMapper.selectByProductId(productId, userId);
             //空对象
@@ -160,7 +163,8 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
                 return Result.error(MessageConstant.DATA_ERROR);
             }
             if (!StringUtils.equals(product.getIsCollection().toString(), CommonStatus.INACTIVE.getNumber().toString())) {
-                product.setIsCollection(CommonStatus.ACTIVE.getNumber());
+                product.setIsCollection(
+                        CommonStatus.ACTIVE.getNumber());
             }
             Map<String, Object> productDetailResultMap = JacksonUtils.toMap(product);
             productDetailResultMap.put(Product.Fields.isCollection, CommonStatus.INACTIVE.getNumber());
@@ -177,7 +181,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         if (CollectionUtils.isEmpty(userIdSet)) {
             List<ProductCollection> productCollectionList = collectionService.lambdaQuery().eq(ProductCollection::getProductId, productId).list();
             userIdSet = productCollectionList.stream().map(ProductCollection::getUserId).collect(Collectors.toSet());
-            RedisConnector.opsForSet().add(productCollectionKey, userIdSet);
+            RedisConnector.opsForValue().set(productCollectionKey, userIdSet);
             RedisConnector.expire(productDetailKey, redisKeyTtlProperties.getProductCollectionTtl(), TimeUnit.SECONDS);
 
         }
@@ -283,23 +287,18 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
      */
     @Override
     public Result searchProductList(Integer pageNum, Integer pageSize, String firstCategoryId, String secondCategoryId, String sortType, String keyword) {
-        String productSortType = ProductSortType.getByValue(sortType).getDbValue();
-        Page<Product> page = new Page<>(pageNum, pageSize);
-        Page<Product> pageResultBox;
-        if (StringUtils.isBlank(firstCategoryId) && StringUtils.isBlank(secondCategoryId)) {
-            pageResultBox = lambdaQuery().like(Product::getName, keyword).last("ORDER BY " + productSortType).page(page);
-        } else if (StringUtils.isNotBlank(firstCategoryId) && StringUtils.isBlank(secondCategoryId)) {
-            List<Long> secondCategoryIdList = RedisConnector.getHashField(RedisKeyGenerator.categoryTreeKey(), RedisKeyGenerator.categoryTreeHashKey(Long.valueOf(firstCategoryId)), new TypeReference<List<Long>>() {
-            });
-            pageResultBox = lambdaQuery().like(Product::getName, keyword).in(Product::getCategoryId, secondCategoryIdList).last("ORDER BY " + productSortType).page(page);
-        } else {
-            pageResultBox = lambdaQuery().eq(Product::getCategoryId, secondCategoryId).like(Product::getName, keyword).last("ORDER BY " + productSortType).page(page);
-             
+        String dbValue = ProductSortType.getByValue(sortType).getDbValue();
+        IPage<Product> page;
+        //只有一级分类
+        if (StringUtils.isNotBlank(firstCategoryId) && StringUtils.isBlank(secondCategoryId)) {
+            page = productMapper.selectByFirstCategoryIdAndKeywordPage(new Page<>(pageNum, pageSize), firstCategoryId, dbValue, keyword);
         }
-
-        PageResult pageResult = PageResult.builder().list(pageResultBox.getRecords()).total(pageResultBox.getTotal())
+        //一级+二级 或 空
+        else {
+            page = productMapper.selectBySecondCategoryIdAndKeywordPage(new Page<>(pageNum, pageSize), firstCategoryId, secondCategoryId, dbValue, keyword);
+        }
+        PageResult pageResult = PageResult.builder().list(page.getRecords()).total(page.getTotal())
                 .pageNum(pageNum).pageSize(pageSize).build();
-
         return Result.success(pageResult);
     }
 
@@ -366,8 +365,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
     public Result getCategoryProductList(String categoryId, String beginProductId) {
         String hashKey = RedisKeyGenerator.categoryTreeHashKey(Long.valueOf(categoryId));
         List<Long> secondCategoryIdList = RedisConnector
-                .getHashField(RedisKeyGenerator.categoryTreeKey(), hashKey, new TypeReference<>() {
-                });
+                .getHashField(RedisKeyGenerator.categoryTreeKey(), hashKey, new TypeReference<>() {});
         List<Product> productList;
         //一级分类 二级分类
         if (!Objects.isNull(secondCategoryIdList)) {
@@ -405,7 +403,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
     }
 
     private List<Product> getProducts(List<Long> categoryIdList, String beginProductId) {
-        if (categoryIdList.isEmpty()) {
+        if (categoryIdList.isEmpty()){
             return new ArrayList<>(0);
 
         }

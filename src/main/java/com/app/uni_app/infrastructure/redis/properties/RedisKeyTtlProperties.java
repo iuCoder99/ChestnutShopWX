@@ -16,4 +16,6 @@ public class RedisKeyTtlProperties {
 
     private long cartTtl;
 
+    private long orderTtl;
+
 }

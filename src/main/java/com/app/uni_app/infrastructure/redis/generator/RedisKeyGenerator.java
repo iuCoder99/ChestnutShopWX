@@ -118,12 +118,23 @@ public class RedisKeyGenerator {
 
     /**
      * categoryTreeHashKey
-     * firstCategory + + firstCategoryId;
+     * firstCategory: + firstCategoryId;
      * @param firstCategoryId
      * @return
      */
     public static String categoryTreeHashKey(Long firstCategoryId){
         return RedisConstant.FIRST_CATEGORY + firstCategoryId;
+    }
+
+
+    /**
+     * orderKey
+     * order: + detail: + orderNo: + orderNo
+     * @param orderNo
+     * @return
+     */
+    public static String orderKey(String orderNo){
+        return RedisConstant.PREFIX_ORDER + RedisConstant.DETAIL + RedisConstant.ORDER_NO + orderNo;
     }
 
 }

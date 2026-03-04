@@ -1,5 +1,6 @@
 package com.app.uni_app.service.impl;
 
+import com.app.uni_app.aop.annotation.RemoveOrderDetailRedisCacheAnnotation;
 import com.app.uni_app.aop.annotation.RemoveOrderSessionAnnotation;
 import com.app.uni_app.common.constant.DataConstant;
 import com.app.uni_app.common.constant.MessageConstant;
@@ -13,6 +14,10 @@ import com.app.uni_app.common.result.Result;
 import com.app.uni_app.common.result.ScrollQueryResult;
 import com.app.uni_app.common.util.DateUtils;
 import com.app.uni_app.common.util.SessionUtils;
+import com.app.uni_app.infrastructure.redis.connect.RedisConnector;
+import com.app.uni_app.infrastructure.redis.generator.RedisKeyGenerator;
+import com.app.uni_app.infrastructure.redis.properties.RedisKeyTtlProperties;
+import com.app.uni_app.job.delay.CancelUnpaidOrderDelayJob;
 import com.app.uni_app.mapper.OrderMapper;
 import com.app.uni_app.pojo.dto.OrderDTO;
 import com.app.uni_app.pojo.dto.OrderItemDTO;
@@ -45,26 +50,36 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements OrderService {
 
     @Resource
     private CopyMapper copyMapper;
+
     @Resource
     private SnowflakeIdGenerator snowflakeIdGenerator;
+
     @Resource
-    private OrderItemService orderItemService;
+    private RedisKeyTtlProperties redisKeyTtlProperties;
 
     @Resource
     private OrderMapper orderMapper;
 
     @Resource
+    private OrderItemService orderItemService;
+
+    @Resource
     private AddressService addressService;
+
+    @Resource
+    private CancelUnpaidOrderDelayJob cancelUnpaidOrderDelayJob;
 
     @Resource
     private SessionUtils sessionUtils;
 
+    private static final Order emptyOrder = Order.builder().id(DataConstant.ZERO_LONG).build();
     private static final String PRODUCT_IDS = "productIds";
     private static final String IS_SUCCESS = "isSuccess";
     private static final String TRY_NUM = "tryNum";
@@ -72,8 +87,6 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
 
     /**
      * 创建订单
-     * @param orderDTO
-     * @return
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -86,23 +99,23 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         Order order = copyMapper.orderDTOToOrder(orderDTO);
         String userId = BaseContext.getUserId();
         String orderNo = snowflakeIdGenerator.generateOrderNo();
-        save(order.setUserId(Long.valueOf(userId)).setOrderNo(orderNo));
+        order.setUserId(Long.valueOf(userId)).setOrderNo(orderNo);
+        save(order);
         List<OrderItem> orderItemList = orderItems.stream()
                 .map(orderItemDTO -> copyMapper.orderItemDTOToOrderItem(orderItemDTO))
                 .peek(orderItem -> orderItem.setOrderId(order.getId())).toList();
+        order.setOrderItems(orderItemList);
         orderItemService.saveBatch(orderItemList);
+
+        cancelUnpaidOrderDelayJob.setUnpaidOrderNoToDelayQueue(orderNo);
+
         OrderWithItemVO orderWithItemVO = copyMapper.orderToOrderWithItemVO(order);
         return Result.success(orderWithItemVO);
     }
 
     /**
      * 获取订单列表(分页)
-     * @param pageNum
-     * @param pageSize
-     * @param status
-     * @return
      */
-
     @Override
     public Result getOrderList(Integer pageNum, Integer pageSize, String status) {
         String userId = BaseContext.getUserId();
@@ -146,8 +159,15 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
      */
     @Override
     public Result getOrderDesc(String orderNo) {
-        Order order = orderMapper.getOrderDesc(orderNo);
+        String key = RedisKeyGenerator.orderKey(orderNo);
+        Order order = RedisConnector.getHashObject(key, Order.class);
         if (Objects.isNull(order)) {
+            order = orderMapper.getOrderDesc(orderNo);
+            order = Objects.isNull(order) ? emptyOrder : order;
+            RedisConnector.setHashObject(key, order);
+            RedisConnector.expire(key,redisKeyTtlProperties.getOrderTtl(),TimeUnit.SECONDS);
+        }
+        if (order.equals(emptyOrder)) {
             return Result.error(MessageConstant.ORDER_NOT_FOUND);
         }
         OrderWithItemVO orderWithItemVO = copyMapper.orderToOrderWithItemVO(order);
@@ -161,12 +181,9 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
      */
     @Override
     @RemoveOrderSessionAnnotation
+    @RemoveOrderDetailRedisCacheAnnotation
     public Result cancelOrder(String orderNo, String cancelReason) {
-        String userId = BaseContext.getUserId();
-        String now = DateUtils.formatLocalDateTime(LocalDateTime.now());
-        boolean isSuccess = lambdaUpdate().eq(Order::getUserId, userId).eq(Order::getOrderNo, orderNo)
-                .set(Order::getStatus, OrderStatusEnum.CANCELLED.getCode()).set(Order::getCancelTime, now)
-                .set(Order::getCancelReason, cancelReason).update();
+        boolean isSuccess = cancelOrderCommon(orderNo, cancelReason);
         if (!isSuccess) {
             return Result.error(MessageConstant.SQL_MESSAGE_SAVE_ERROR);
         }
@@ -176,6 +193,14 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         return Result.success(map);
     }
 
+    public boolean cancelOrderCommon(String orderNo, String cancelReason) {
+        String now = DateUtils.formatLocalDateTime(LocalDateTime.now());
+        return lambdaUpdate().eq(Order::getOrderNo, orderNo)
+                .set(Order::getStatus, OrderStatusEnum.CANCELLED.getCode()).set(Order::getCancelTime, now)
+                .set(Order::getCancelReason, cancelReason).update();
+    }
+
+
     /**
      * 支付成功订单,如果五次失败,使用线程池异步进行更新(保证一定更新成功)(目前测试,只支持微信支付)
      * @param orderNo
@@ -183,26 +208,30 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
      */
     @Override
     @RemoveOrderSessionAnnotation
+    @RemoveOrderDetailRedisCacheAnnotation
     public Result paySuccessOrder(String orderNo) {
+
+        cancelUnpaidOrderDelayJob.setPaidOrderNoToCancelDelayQueue(orderNo);
+
         int tryNum = 0;
         Map<String, Object> map = new HashMap<>(2);
-        updateOrderPayIsSuccess(map,orderNo, tryNum);
+        updateOrderPayIsSuccess(map, orderNo, tryNum);
         boolean isSuccess = (boolean) map.get(IS_SUCCESS);
         tryNum = (int) map.get(TRY_NUM);
         while (!isSuccess) {
-            Map<String, Object> nextMap = updateOrderPayIsSuccess(map,orderNo, tryNum);
+            Map<String, Object> nextMap = updateOrderPayIsSuccess(map, orderNo, tryNum);
             tryNum = (int) nextMap.get(TRY_NUM);
-            isSuccess=(boolean) nextMap.get(IS_SUCCESS);
+            isSuccess = (boolean) nextMap.get(IS_SUCCESS);
 
         }
         Map<String, Object> resultMap = new HashMap<>(2);
         resultMap.put(Order.Fields.orderNo, orderNo);
-        resultMap.put(Order.Fields.status,OrderStatusEnum.PENDING_SHIPMENT.getValue());
+        resultMap.put(Order.Fields.status, OrderStatusEnum.PENDING_SHIPMENT.getValue());
         return Result.success(resultMap);
     }
 
 
-    private Map<String, Object> updateOrderPayIsSuccess(Map<String,Object> map,String orderNo, int tryNum) {
+    private Map<String, Object> updateOrderPayIsSuccess(Map<String, Object> map, String orderNo, int tryNum) {
         if (tryNum == 5) {
             throw new PayException(orderNo);
 
@@ -210,7 +239,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         boolean isSuccess = lambdaUpdate().eq(Order::getOrderNo, orderNo)
                 .set(Order::getStatus, OrderStatusEnum.PENDING_SHIPMENT)
                 .set(Order::getPayType, PayTypeEnum.WECHAT_PAY)
-                .set(Order::getPayTime,LocalDateTime.now())
+                .set(Order::getPayTime, LocalDateTime.now())
                 .update();
         tryNum++;
         map.put(IS_SUCCESS, isSuccess);
@@ -226,6 +255,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
      */
     @Override
     @RemoveOrderSessionAnnotation
+    @RemoveOrderDetailRedisCacheAnnotation
     public Result confirmOrderReceipt(String orderNo) {
         String userId = BaseContext.getUserId();
         String now = DateUtils.formatLocalDateTime(LocalDateTime.now());
@@ -248,6 +278,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
      * @return
      */
     @Override
+    @RemoveOrderSessionAnnotation
+    @RemoveOrderDetailRedisCacheAnnotation
     public Result deleteOrder(String orderNo) {
         boolean isSuccess = lambdaUpdate().set(Order::getIs_deleted, CommonStatus.ACTIVE.getNumber()).eq(Order::getOrderNo, orderNo).update();
         if (!isSuccess) {

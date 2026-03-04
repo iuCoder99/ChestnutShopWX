@@ -28,6 +28,10 @@ public interface ProductMapper extends BaseMapper<Product> {
 
     IPage<Product> selectByCategoryIdPage(Page<Product> productPage, String categoryId);
 
+    IPage<Product> selectByFirstCategoryIdAndKeywordPage(Page<Product> productPage, String firstCategoryId, String dbValue, String keyword);
+
+    IPage<Product> selectBySecondCategoryIdAndKeywordPage(Page<Product> productPage, String firstCategoryId, String secondCategoryId, String dbValue, String keyword);
+
     List<Product> selectRelatedByCategoryId(String productId, Integer limit);
 
     List<Product> getBriefProduct(@Param("productIdsList") List<String> productIdsList);

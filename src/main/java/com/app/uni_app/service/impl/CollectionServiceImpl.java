@@ -1,5 +1,6 @@
 package com.app.uni_app.service.impl;
 
+import com.app.uni_app.aop.annotation.RemoveProductCollectionRedisCacheAnnotation;
 import com.app.uni_app.common.constant.MessageConstant;
 import com.app.uni_app.common.context.BaseContext;
 import com.app.uni_app.common.result.PageResult;
@@ -25,6 +26,7 @@ public class CollectionServiceImpl extends ServiceImpl<CollectionMapper, Product
      * @return
      */
     @Override
+    @RemoveProductCollectionRedisCacheAnnotation
     public Result addCollection(String productId) {
         if (StringUtils.isBlank(productId)) {
             return Result.error(MessageConstant.TOM_CAT_ERROR);
@@ -45,6 +47,7 @@ public class CollectionServiceImpl extends ServiceImpl<CollectionMapper, Product
      * @return
      */
     @Override
+    @RemoveProductCollectionRedisCacheAnnotation
     public Result deleteCollection(String productIds) {
         if (StringUtils.isBlank(productIds)) {
             return Result.error(MessageConstant.CONTENT_NOT_EXIST_ERROR);

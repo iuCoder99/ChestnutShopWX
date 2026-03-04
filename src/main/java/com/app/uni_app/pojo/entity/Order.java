@@ -6,11 +6,16 @@ import com.app.uni_app.pojo.emums.OrderStatusEnum;
 import com.app.uni_app.pojo.emums.PayTypeEnum;
 import com.baomidou.mybatisplus.annotation.*;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.experimental.FieldNameConstants;
 import org.springframework.format.annotation.DateTimeFormat;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -22,8 +27,13 @@ import java.util.List;
 @TableName("`order`")
 @Accessors(chain = true)
 @FieldNameConstants
-public class Order {
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class Order implements Serializable {
 
+    @Serial
+    private static final long serialVersionUID = 1L;
     /**
      * 订单ID（主键，自增）
      */
