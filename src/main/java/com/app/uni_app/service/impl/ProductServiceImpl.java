@@ -287,18 +287,23 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
      */
     @Override
     public Result searchProductList(Integer pageNum, Integer pageSize, String firstCategoryId, String secondCategoryId, String sortType, String keyword) {
-        String dbValue = ProductSortType.getByValue(sortType).getDbValue();
-        IPage<Product> page;
-        //只有一级分类
-        if (StringUtils.isNotBlank(firstCategoryId) && StringUtils.isBlank(secondCategoryId)) {
-            page = productMapper.selectByFirstCategoryIdAndKeywordPage(new Page<>(pageNum, pageSize), firstCategoryId, dbValue, keyword);
+        String productSortType = ProductSortType.getByValue(sortType).getDbValue();
+        Page<Product> page = new Page<>(pageNum, pageSize);
+        Page<Product> pageResultBox;
+        if (StringUtils.isBlank(firstCategoryId) && StringUtils.isBlank(secondCategoryId)) {
+            pageResultBox = lambdaQuery().like(Product::getName, keyword).last("ORDER BY " + productSortType).page(page);
+        } else if (StringUtils.isNotBlank(firstCategoryId) && StringUtils.isBlank(secondCategoryId)) {
+            List<Long> secondCategoryIdList = RedisConnector.getHashField(RedisKeyGenerator.categoryTreeKey(), RedisKeyGenerator.categoryTreeHashKey(Long.valueOf(firstCategoryId)), new TypeReference<List<Long>>() {
+            });
+            pageResultBox = lambdaQuery().like(Product::getName, keyword).in(Product::getCategoryId, secondCategoryIdList).last("ORDER BY " + productSortType).page(page);
+        } else {
+            pageResultBox = lambdaQuery().eq(Product::getCategoryId, secondCategoryId).like(Product::getName, keyword).last("ORDER BY " + productSortType).page(page);
+
         }
-        //一级+二级 或 空
-        else {
-            page = productMapper.selectBySecondCategoryIdAndKeywordPage(new Page<>(pageNum, pageSize), firstCategoryId, secondCategoryId, dbValue, keyword);
-        }
-        PageResult pageResult = PageResult.builder().list(page.getRecords()).total(page.getTotal())
+
+        PageResult pageResult = PageResult.builder().list(pageResultBox.getRecords()).total(pageResultBox.getTotal())
                 .pageNum(pageNum).pageSize(pageSize).build();
+
         return Result.success(pageResult);
     }
 

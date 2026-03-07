@@ -70,16 +70,7 @@
             and p.category_id=#{categoryId}
         </if>
     </select>
-    <select id="selectBySecondCategoryIdAndKeywordPage" resultMap="ProductWithImageAndSpecResultMap">
-        <include refid="selectAllProductWithImageAndSpec_Where_SQL"/>
-        <if test="secondCategoryId !=null and secondCategoryId !=''">
-            and p.category_id=#{secondCategoryId}
-        </if>
-        <if test="keyword !=null and keyword !=''">
-            and p.name LIKE CONCAT('%', #{keyword}, '%')
-        </if>
-        order by ${dbValue}
-    </select>
+
     <select id="selectRelatedByCategoryId" resultMap="ProductWithImageAndSpecResultMap">
         <include refid="selectAllProductWithImageAndSpec_Join_SQL"/>
         inner join product pOne on p.category_id= pOne.category_id
@@ -88,16 +79,7 @@
         and p.status = 1
         limit #{limit}
     </select>
-    <select id="selectByFirstCategoryIdAndKeywordPage" resultMap="ProductWithImageAndSpecResultMap">
-        <include refid="selectAllProductWithImageAndSpec_Where_SQL"/>
-        <if test="firstCategoryId !=null and firstCategoryId !=''">
-            and p.category_id in (select id from category where parent_id =#{firstCategoryId})
-        </if>
-        <if test="keyword !=null and keyword !=''">
-            and p.name LIKE CONCAT('%', #{keyword}, '%')
-        </if>
-        order by ${dbValue}
-    </select>
+
 
     <select id="selectByProductId" resultMap="ProductWithImageAndSpecResultMap">
         SELECT p.id                AS product_id,
