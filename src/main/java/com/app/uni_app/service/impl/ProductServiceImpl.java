@@ -367,25 +367,28 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
      * @return
      */
     @Override
-    public Result getCategoryProductList(String categoryId, String beginProductId) {
+    public Result getCategoryProductList(String categoryId, String beginProductId,String sortType) {
         String hashKey = RedisKeyGenerator.categoryTreeHashKey(Long.valueOf(categoryId));
         List<Long> secondCategoryIdList = RedisConnector
                 .getHashField(RedisKeyGenerator.categoryTreeKey(), hashKey, new TypeReference<>() {});
         List<Product> productList;
-        //一级分类 二级分类
+        //一级分类
         if (!Objects.isNull(secondCategoryIdList)) {
             productList = getProducts(secondCategoryIdList, beginProductId);
 
         } else {
+            //二级分类
             productList = getProducts(categoryId, beginProductId);
         }
         if (CollectionUtils.isEmpty(productList)) {
             return Result.success(CollectionUtils.emptyCollection());
         }
+        ProductSortType productSortType = ProductSortType.getByValue(sortType);
         List<SimpleProductVO> simpleProductVOs = productList.stream()
-                .map(product -> copyMapper.productToSimpleProductVO(product)).collect(Collectors.toList());
+                .sorted((p1, p2) -> ProductSortType.compare(p1,p2,productSortType))
+                .map(product -> copyMapper.productToSimpleProductVO(product))
+                .collect(Collectors.toList());
         String endProductId = simpleProductVOs.get(simpleProductVOs.size() - 1).getId().toString();
-        Collections.shuffle(simpleProductVOs);
         HashMap<String, Object> resultMap = new HashMap<>(2);
         resultMap.put(PRODUCT_LIST, simpleProductVOs);
         resultMap.put(END_PRODUCT_ID, endProductId);

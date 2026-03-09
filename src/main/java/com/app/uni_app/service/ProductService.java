@@ -30,7 +30,7 @@ public interface ProductService extends IService<Product> {
 
     Result getBriefProduct(String productIds);
 
-    Result getCategoryProductList(@NotBlank String categoryId, String beginProductId);
+    Result getCategoryProductList(@NotBlank String categoryId, String beginProductId,String sortType);
 
     Result getSimpleProductByScrollQuery();
 

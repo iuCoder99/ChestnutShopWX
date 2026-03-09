@@ -80,15 +80,17 @@ public class CategoryController {
     }
 
     /**
-     * 查看二级分类下的商品列表
+     * 查看分类下的商品列表,支持一级分类和二级分类
      *
      * @param categoryId
      * @return
      */
     @GetMapping("/category/product/list/{categoryId}/{beginProductId}")
-    @Operation(summary = "查询二级分类商品列表", description = "根据二级分类ID和起始商品ID，获取该分类下的商品列表")
-    public Result getCategoryProductList(@PathVariable @NotBlank String categoryId, @PathVariable String beginProductId) {
-        return productService.getCategoryProductList(categoryId, beginProductId);
+    @Operation(summary = "查询分类商品列表", description = "根据分类ID和起始商品ID，获取该分类下的商品列表，支持一级分类，二级分类")
+    public Result getCategoryProductList(@PathVariable @NotBlank String categoryId
+            , @PathVariable String beginProductId
+            , @RequestParam(defaultValue = "default") String sortType) {
+        return productService.getCategoryProductList(categoryId, beginProductId, sortType);
     }
 
 }

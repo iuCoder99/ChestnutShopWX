@@ -1,5 +1,6 @@
 package com.app.uni_app.pojo.emums;
 
+import com.app.uni_app.pojo.entity.Product;
 import lombok.Getter;
 
 @Getter
@@ -45,6 +46,23 @@ public enum ProductSortType {
         throw new IllegalArgumentException("无效的ProductSortType.value:" + value);
     }
 
+    public static int compare(Product p1, Product p2, ProductSortType productSortType) {
+        switch (productSortType) {
+            case DEFAULT -> {
+                return p2.getSalesCount().compareTo(p1.getSalesCount());
+            }
+            case PRICE_ASC -> {
+                return p1.getPrice().compareTo(p2.getPrice());
+            }
+            case PRICE_DESC -> {
+                return p2.getPrice().compareTo(p1.getPrice());
+            }
+            case NEWEST -> {
+                return p2.getUpdateTime().compareTo(p1.getUpdateTime());
+            }
+        }
+        throw new IllegalArgumentException("无效的ProductSortType: " + productSortType);
+    }
 
 
 }
