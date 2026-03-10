@@ -137,4 +137,14 @@ public class RedisKeyGenerator {
         return RedisConstant.PREFIX_ORDER + RedisConstant.DETAIL + RedisConstant.ORDER_NO + orderNo;
     }
 
+    /**
+     * firstCommentKey
+     * product: + firstComment: + firstCommentId
+     * @param firstCommentId
+     * @return
+     */
+    public static String firstCommentKey(Long firstCommentId){
+        return RedisConstant.PREFIX_PRODUCT+RedisConstant.FIRST_COMMENT+firstCommentId;
+    }
+
 }

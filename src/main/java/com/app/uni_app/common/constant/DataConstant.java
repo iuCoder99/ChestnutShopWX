@@ -1,5 +1,7 @@
 package com.app.uni_app.common.constant;
 
+import com.app.uni_app.common.generator.NicknameGenerator;
+
 public class DataConstant {
 
     /**
@@ -16,6 +18,9 @@ public class DataConstant {
     public static final long ZERO_LONG = 0L;
     public static final long ONE_LONG = 1L;
     public static final String NEGATIVE_ONE_STRING = "-1";
+
+    public static final String DEFAULT_AVATAR="/static/images/default-avatar.png";
+    public static final String ANONYMOUS_NICKNAME=NicknameGenerator.generateAnonymousNickname();
 
 
 }

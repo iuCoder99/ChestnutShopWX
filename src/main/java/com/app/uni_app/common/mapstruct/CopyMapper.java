@@ -48,4 +48,8 @@ public interface CopyMapper {
     OrderTrackingVO orderTrackingToOrderTrackingVO(OrderTracking orderTracking);
 
     FactoryInfoVO factoryInfoToFactoryInfoVO(FactoryInfo factoryInfo);
+
+    ProductComment firstProductCommentDTOToProductComment(FirstProductCommentDTO firstProductCommentDTO);
+
+    ProductComment secondProductCommentDTOToProductComment(SecondProductCommentDTO secondProductCommentDTO);
 }

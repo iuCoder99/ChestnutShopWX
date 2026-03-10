@@ -28,6 +28,7 @@ public class RedisConstant {
     public static final String HOT = "hot";
     public static final String ID_LIST="idList";
     public static final String ALL = "all";
+    public static final String FIRST_COMMENT="firstComment:";
 
 }
 

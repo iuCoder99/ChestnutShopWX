@@ -8,12 +8,14 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.annotation.Order;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.sql.SQLException;
 import java.sql.SQLIntegrityConstraintViolationException;
+import java.util.Objects;
 
 /**
  * 全局异常处理器，处理项目中抛出的业务异常
@@ -84,6 +86,16 @@ public class GlobalExceptionHandler {
     public Result<?> SQLExceptionHandler(Exception ex) {
         log.error(" SQL ExceptionHandler拦截到:{};异常信息:{}", ex.getClass(), ex.getMessage());
         return Result.error(MessageConstant.SQL_MESSAGE_SAVE_ERROR);
+    }
+
+    /**
+     * 处理参数校验异常
+     */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public Result<?> handleValidException(MethodArgumentNotValidException e) {
+        // 获取第一个校验失败的提示信息
+        String errorMsg = Objects.requireNonNull(e.getBindingResult().getFieldError()).getDefaultMessage();
+        return Result.error(errorMsg);
     }
 
     /**
