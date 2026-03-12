@@ -52,4 +52,12 @@ public interface CopyMapper {
     ProductComment firstProductCommentDTOToProductComment(FirstProductCommentDTO firstProductCommentDTO);
 
     ProductComment secondProductCommentDTOToProductComment(SecondProductCommentDTO secondProductCommentDTO);
+
+    ProductCommentAppend appendProductFirstCommentDTOToProductCommentAppend(AppendProductFirstCommentDTO appendProductFirstCommentDTO);
+
+    ProductFirstCommentVO productCommentToProductFirstCommentVO(ProductComment productComment);
+
+    ProductSecondCommentVO productCommentToProductSecondCommentVO(ProductComment productComment);
+
+    ProductAppendCommentVO productCommentAppendToProductCommentAppendVO(ProductCommentAppend productCommentAppend);
 }

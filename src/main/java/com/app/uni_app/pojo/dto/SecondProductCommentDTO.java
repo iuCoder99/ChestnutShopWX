@@ -61,7 +61,7 @@ public class SecondProductCommentDTO {
     /**
      * 被回复用户ID（仅回复评论时必填）
      */
-    @Schema(description = "被回复用户ID（回复评论时必填）", example = "30001")
+    @Schema(description = "被回复用户ID（回复评论时必填）")
     private String replyUserId;
 
     /**

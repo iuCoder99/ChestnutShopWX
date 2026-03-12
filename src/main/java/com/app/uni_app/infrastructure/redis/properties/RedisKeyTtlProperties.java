@@ -18,4 +18,8 @@ public class RedisKeyTtlProperties {
 
     private long orderTtl;
 
+    private long productFirstCommentTtl;
+
+    private long productAppendCommentTtl;
+
 }

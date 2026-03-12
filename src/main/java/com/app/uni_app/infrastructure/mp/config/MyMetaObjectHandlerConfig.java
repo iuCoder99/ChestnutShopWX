@@ -1,4 +1,4 @@
-package com.app.uni_app.config;
+package com.app.uni_app.infrastructure.mp.config;
 
 import com.baomidou.mybatisplus.core.handlers.MetaObjectHandler;
 import org.apache.ibatis.reflection.MetaObject;

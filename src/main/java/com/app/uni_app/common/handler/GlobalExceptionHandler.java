@@ -2,6 +2,7 @@ package com.app.uni_app.common.handler;
 
 
 import com.app.uni_app.common.constant.MessageConstant;
+import com.app.uni_app.common.exception.EmptyObjectException;
 import com.app.uni_app.common.exception.PayException;
 import com.app.uni_app.common.result.Result;
 import jakarta.servlet.http.HttpServletRequest;
@@ -87,6 +88,15 @@ public class GlobalExceptionHandler {
         log.error(" SQL ExceptionHandler拦截到:{};异常信息:{}", ex.getClass(), ex.getMessage());
         return Result.error(MessageConstant.SQL_MESSAGE_SAVE_ERROR);
     }
+
+    @ExceptionHandler({EmptyObjectException.class})
+    public Result<?> EmptyObjectExceptionHandler(Exception ex) {
+        log.error("EmptyObject ExceptionHandler拦截到:{};异常信息:{}", ex.getClass(), ex.getMessage());
+        return Result.error(MessageConstant.DATA_ERROR);
+    }
+
+
+
 
     /**
      * 处理参数校验异常

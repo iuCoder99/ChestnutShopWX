@@ -1,6 +1,8 @@
 package com.app.uni_app.controller.admin;
 
+import com.app.uni_app.common.result.CursorCommonEntity;
 import com.app.uni_app.common.result.Result;
+import com.app.uni_app.pojo.dto.AppendProductFirstCommentDTO;
 import com.app.uni_app.pojo.dto.FirstProductCommentDTO;
 import com.app.uni_app.pojo.dto.SecondProductCommentDTO;
 import com.app.uni_app.pojo.entity.ProductSearchKeyword;
@@ -11,6 +13,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
@@ -164,13 +168,41 @@ public class ProductController {
         return productSearchKeywordService.updateProductSearchListAdmin(productSearchKeywordList);
     }
 
-
-    @Operation(summary = "用户分类查询商品评论", description = "根据商品评论种类进行查询，使用于商品详情页的滚动查询一级分类")
-    @GetMapping("/user/product/comment/firstComment/show")
-    public Result<?> getProductCommentBySortType(Long productId, Long specId) {
-        return null;
+    /**
+     * 用户做分类查询商品一级评论
+     * @param cursorCommonEntity
+     * @param productId
+     * @return
+     */
+    @Operation(summary = "用户分类查询商品一级评论", description = "根据商品评论种类进行查询，使用于商品详情页的滚动查询一级分类")
+    @PostMapping("/user/product/comment/firstComment/show")
+    public Result<?> getProductCommentBySortType(@RequestBody @Valid CursorCommonEntity cursorCommonEntity
+            , @RequestParam @NotBlank String productId) {
+        return productCommentService.getProductCommentBySortType(cursorCommonEntity, productId);
     }
 
+    /**
+     * 查询指定一级评论下二级评论
+     * @param firstCommentId
+     * @return
+     */
+    @Operation(summary = "查看二级评价", description = "将二级评价按照创建时间进行排序")
+    @PostMapping("/user/product/comment/secondComment/show")
+    public Result<?> getSecondComment(@RequestParam @NotBlank String firstCommentId
+            , @RequestBody @NotNull CursorCommonEntity cursorCommonEntity) {
+        return productCommentService.getSecondComment(firstCommentId, cursorCommonEntity);
+
+    }
+
+    /**
+     *查询指定一级评论下的用户追评
+     * @return
+     */
+    @Operation(summary = "用户查看追评", description = "用户查看指定一级评论下的追评")
+    @GetMapping("/user/product/comment/appendComment/show")
+    public Result<?> getAppendComment(@RequestParam @NotBlank String firstCommentId) {
+        return productCommentService.getAppendComment(firstCommentId);
+    }
 
     /**
      * 用户发表一级商品评论
@@ -191,5 +223,18 @@ public class ProductController {
     public Result<?> saveProductSecondComment(@RequestBody @Valid SecondProductCommentDTO secondProductCommentDTO) {
         return productCommentService.saveProductSecondComment(secondProductCommentDTO);
     }
+
+    /**
+     * 用户对一级评论进行追加
+     * @param appendProductFirstCommentDTO
+     * @return
+     */
+
+    @Operation(summary = "用户对一级评论进行追评", description = "")
+    @PostMapping("/user/product/comment/firstComment/append")
+    public Result<?> appendProductFirstComment(@Valid @RequestBody @NotNull AppendProductFirstCommentDTO appendProductFirstCommentDTO) {
+        return productCommentService.appendProductFirstComment(appendProductFirstCommentDTO);
+    }
+
 
 }

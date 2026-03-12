@@ -28,6 +28,8 @@ public class MessageConstant {
     public static final String DELETE_ERROR = "删除失败,请重试";
     public static final String DATA_ERROR = "数据异常,请重试";
     public static final String JSON_CONVERT_ERROR =  "JSON 序列化异常";
+    public static final String DATE_TIME_PARSE_ERROR="时间格式转换异常";
+    public static final String HAVE_APPEND ="一条评价只允许追评一次,该评价已经追评过了";
 
 
 }

@@ -4,7 +4,6 @@ package com.app.uni_app;
 import com.app.uni_app.common.generator.SnowflakeIdGenerator;
 import com.app.uni_app.infrastructure.redis.connect.RedisConnector;
 import com.app.uni_app.mapper.CartMapper;
-import com.app.uni_app.pojo.entity.CartItem;
 import com.app.uni_app.pojo.entity.Product;
 import com.app.uni_app.pojo.entity.ProductSpec;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -12,6 +11,7 @@ import jakarta.annotation.Resource;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -91,8 +91,7 @@ public class Test {
 
     @org.junit.jupiter.api.Test
     public void test4() {
-        List<CartItem> cartList = cartMapper.getCartList("1");
-        System.out.println(cartList);
+        System.out.println("time:"+ LocalDateTime.now());
 
     }
 }

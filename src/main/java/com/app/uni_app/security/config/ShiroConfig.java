@@ -126,8 +126,10 @@ public class ShiroConfig {
         filterChainDefinitionMap.put("/api/user/create/account", "anon");
         filterChainDefinitionMap.put("/api/user/forget/password", "anon");
         filterChainDefinitionMap.put("/api/user/change/password", "anon");
+        filterChainDefinitionMap.put("/api/user/product/comment/**/show", "anon");
         filterChainDefinitionMap.put("/api/banner/list", "anon");
         filterChainDefinitionMap.put("/api/product/**", "anon");
+
         filterChainDefinitionMap.put("/api/category/**", "anon");
         filterChainDefinitionMap.put("/api/notice/**", "anon");
         filterChainDefinitionMap.put("/api/upload/image", "anon");

@@ -1,12 +1,14 @@
 package com.app.uni_app.pojo.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.experimental.FieldNameConstants;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDateTime;
 
@@ -92,10 +94,24 @@ public class ProductComment {
 
 
     /**
+     * 是否追评
+     */
+    @TableField("is_append_comment")
+    private int isAppendComment = 0;
+
+
+    /**
      * 是否匿名评论
      */
     @TableField("is_anonymous")
     private int isAnonymous = 0;
+
+    /**
+     * 是否为好评
+     * 评分大于等于四星
+     */
+    @TableField("is_good_review")
+    private int isGoodReview ;
 
 
     /**
@@ -138,11 +154,23 @@ public class ProductComment {
      * 创建时间
      */
     @TableField(value = "create_time", fill = FieldFill.INSERT)
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createTime;
 
     /**
      * 更新时间
      */
     @TableField(value = "update_time", fill = FieldFill.INSERT_UPDATE)
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updatedTime;
+
+    public int getIsGoodReview() {
+        if (this.rating == null) {
+            return 0;
+        }
+        return this.rating >= 4 ? 1 : 0;
+    }
+
 }

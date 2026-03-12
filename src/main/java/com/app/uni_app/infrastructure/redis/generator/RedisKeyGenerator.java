@@ -33,8 +33,8 @@ public class RedisKeyGenerator {
      * banner:all
      * @return
      */
-    public static String banner(){
-        return RedisConstant.PREFIX_BANNER +RedisConstant.ALL;
+    public static String banner() {
+        return RedisConstant.PREFIX_BANNER + RedisConstant.ALL;
 
     }
 
@@ -43,8 +43,8 @@ public class RedisKeyGenerator {
      * product:hot
      * @return
      */
-    public static String hotProductKey(){
-        return RedisConstant.PREFIX_PRODUCT + RedisConstant.HOT ;
+    public static String hotProductKey() {
+        return RedisConstant.PREFIX_PRODUCT + RedisConstant.HOT;
     }
 
     /**
@@ -53,7 +53,7 @@ public class RedisKeyGenerator {
      * @param hotProductId
      * @return
      */
-    public static String hotProductHashKey(Long hotProductId){
+    public static String hotProductHashKey(Long hotProductId) {
         return RedisConstant.ID + hotProductId;
     }
 
@@ -62,7 +62,7 @@ public class RedisKeyGenerator {
      * product: + hot: + idList
      * @return
      */
-    public static String hotProductIdList(){
+    public static String hotProductIdList() {
         return RedisConstant.PREFIX_PRODUCT + RedisConstant.HOT + ":" + RedisConstant.ID_LIST;
     }
 
@@ -72,7 +72,7 @@ public class RedisKeyGenerator {
      * @param productId
      * @return
      */
-    public static String productDetail(Long productId){
+    public static String productDetail(Long productId) {
         return RedisConstant.PREFIX_PRODUCT + RedisConstant.DETAIL + productId;
     }
 
@@ -82,7 +82,7 @@ public class RedisKeyGenerator {
      * @param productId
      * @return
      */
-    public static String productCollection(Long productId){
+    public static String productCollection(Long productId) {
         return RedisConstant.PREFIX_PRODUCT + RedisConstant.COLLECTION + productId;
 
     }
@@ -93,8 +93,8 @@ public class RedisKeyGenerator {
      * @param userId
      * @return
      */
-    public static String cartKey(Long userId){
-        return RedisConstant.PREFIX_CART + RedisConstant.USER +userId;
+    public static String cartKey(Long userId) {
+        return RedisConstant.PREFIX_CART + RedisConstant.USER + userId;
     }
 
     /**
@@ -102,7 +102,7 @@ public class RedisKeyGenerator {
      * product: + productId + "," + productSpec + specId
      * @return
      */
-    public static String cartHashKey(String productId , String specId){
+    public static String cartHashKey(String productId, String specId) {
         return RedisConstant.PRODUCT + productId + "," + RedisConstant.PRODUCT_SPEC + specId;
 
     }
@@ -112,7 +112,7 @@ public class RedisKeyGenerator {
      * category: + tree
      * @return
      */
-    public static String categoryTreeKey(){
+    public static String categoryTreeKey() {
         return RedisConstant.PREFIX_CATEGORY + RedisConstant.TREE;
     }
 
@@ -122,7 +122,7 @@ public class RedisKeyGenerator {
      * @param firstCategoryId
      * @return
      */
-    public static String categoryTreeHashKey(Long firstCategoryId){
+    public static String categoryTreeHashKey(Long firstCategoryId) {
         return RedisConstant.FIRST_CATEGORY + firstCategoryId;
     }
 
@@ -133,7 +133,7 @@ public class RedisKeyGenerator {
      * @param orderNo
      * @return
      */
-    public static String orderKey(String orderNo){
+    public static String orderKey(String orderNo) {
         return RedisConstant.PREFIX_ORDER + RedisConstant.DETAIL + RedisConstant.ORDER_NO + orderNo;
     }
 
@@ -143,8 +143,18 @@ public class RedisKeyGenerator {
      * @param firstCommentId
      * @return
      */
-    public static String firstCommentKey(Long firstCommentId){
-        return RedisConstant.PREFIX_PRODUCT+RedisConstant.FIRST_COMMENT+firstCommentId;
+    public static String firstCommentKey(Long firstCommentId) {
+        return RedisConstant.PREFIX_PRODUCT + RedisConstant.FIRST_COMMENT + firstCommentId;
+    }
+
+    /**
+     * appendCommentKey
+     * product: + appendComment: + firstComment: + firstCommentId
+     * @param firstCommentId
+     * @return
+     */
+    public static String appendCommentKey(Long firstCommentId) {
+        return RedisConstant.PREFIX_PRODUCT + RedisConstant.APPEND_COMMENT  + RedisConstant.FIRST_COMMENT+ firstCommentId;
     }
 
 }
