@@ -3,6 +3,7 @@ package com.app.uni_app.service;
 import com.app.uni_app.common.result.Result;
 import com.app.uni_app.pojo.dto.OrderDTO;
 import com.app.uni_app.pojo.dto.ScrollQueryDTO;
+import com.app.uni_app.pojo.emums.OrderStatusEnum;
 import com.app.uni_app.pojo.entity.Order;
 import com.baomidou.mybatisplus.extension.service.IService;
 import jakarta.validation.constraints.NotBlank;
@@ -33,4 +34,6 @@ public interface OrderService extends IService<Order> {
     Result getOrderListByPage(@NotBlank String pageName);
 
     Result paySuccessOrder(@NotBlank String orderNo);
+
+    Boolean updateOrderStatus(Long orderId, String orderNo, @NotNull OrderStatusEnum orderStatusEnum);
 }

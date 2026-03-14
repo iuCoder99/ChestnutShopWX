@@ -48,10 +48,10 @@ public class ProductCommentAppend {
     private Long productSpecId;
 
     /**
-     * 订单ID（冗余，关联订单表）
+     * 订单单号（冗余，关联订单表）
      */
-    @TableField(value = "order_id")
-    private Long orderId;
+    @TableField(value = "order_no")
+    private String orderNo;
 
     /**
      * 追评人用户 ID

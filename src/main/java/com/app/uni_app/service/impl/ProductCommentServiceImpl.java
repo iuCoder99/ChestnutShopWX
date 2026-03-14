@@ -14,11 +14,14 @@ import com.app.uni_app.infrastructure.mp.util.MyBatisBatchExecutor;
 import com.app.uni_app.infrastructure.redis.connect.RedisConnector;
 import com.app.uni_app.infrastructure.redis.generator.RedisKeyGenerator;
 import com.app.uni_app.infrastructure.redis.properties.RedisKeyTtlProperties;
+import com.app.uni_app.infrastructure.rocketmq.constant.order.MqOrderConstant;
+import com.app.uni_app.infrastructure.rocketmq.consumer.order.OrderStatusConsumer;
 import com.app.uni_app.mapper.ProductCommentAppendMapper;
 import com.app.uni_app.mapper.ProductCommentMapper;
 import com.app.uni_app.pojo.dto.AppendProductFirstCommentDTO;
 import com.app.uni_app.pojo.dto.FirstProductCommentDTO;
 import com.app.uni_app.pojo.dto.SecondProductCommentDTO;
+import com.app.uni_app.pojo.emums.OrderStatusEnum;
 import com.app.uni_app.pojo.emums.ProductCommentQuerySortTypeEnum;
 import com.app.uni_app.pojo.entity.ProductComment;
 import com.app.uni_app.pojo.entity.ProductCommentAppend;
@@ -32,11 +35,13 @@ import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapp
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
+import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -46,6 +51,8 @@ import java.util.function.Function;
 @Service
 @RequiredArgsConstructor
 public class ProductCommentServiceImpl extends ServiceImpl<ProductCommentMapper, ProductComment> implements ProductCommentService {
+
+    private final RocketMQTemplate rocketMQTemplate;
 
     private final CopyMapper copyMapper;
 
@@ -88,6 +95,11 @@ public class ProductCommentServiceImpl extends ServiceImpl<ProductCommentMapper,
         if (!isSuccess) {
             return Result.error(MessageConstant.TOM_CAT_ERROR);
         }
+        String destination = MqOrderConstant.TOPIC_ORDER + ":" + MqOrderConstant.TAG_ORDER_STATUS;
+        HashMap<String, Object> mqMessageMap = new HashMap<>(2);
+        mqMessageMap.put(OrderStatusConsumer.ORDER_NO, firstProductCommentDTO.getOrderNo());
+        mqMessageMap.put(OrderStatusConsumer.ORDER_STATUS_ENUM, OrderStatusEnum.EVALUATED.getValue());
+        rocketMQTemplate.convertAndSend(destination, mqMessageMap);
         return Result.success();
     }
 
@@ -174,8 +186,9 @@ public class ProductCommentServiceImpl extends ServiceImpl<ProductCommentMapper,
     @Transactional(rollbackFor = Exception.class)
     public Result<?> appendProductFirstComment(AppendProductFirstCommentDTO appendProductFirstCommentDTO) {
         String userId = BaseContext.getUserId();
+        ProductComment productComment = lambdaQuery().eq(ProductComment::getOrderNo, appendProductFirstCommentDTO.getOrderNo()).one();
         ProductCommentAppend productCommentAppend = copyMapper.appendProductFirstCommentDTOToProductCommentAppend(appendProductFirstCommentDTO);
-        Long commentId = productCommentAppend.getCommentId();
+        Long commentId = productComment.getId();
         String firstCommentKey = RedisKeyGenerator.firstCommentKey(commentId);
         ProductComment firstProductComment = RedisConnector.getHashObject(firstCommentKey, ProductComment.class);
         firstProductComment = getProductCommentIfRedisCacheNull(firstProductComment, commentId, firstCommentKey);
@@ -194,8 +207,9 @@ public class ProductCommentServiceImpl extends ServiceImpl<ProductCommentMapper,
         }
         productCommentAppend.setProductId(firstProductComment.getProductId())
                 .setProductSpecId(firstProductComment.getProductSpecId())
-                .setOrderId(firstProductComment.getOrderId())
-                .setUserId(Long.valueOf(userId));
+                .setOrderNo(firstProductComment.getOrderNo())
+                .setUserId(Long.valueOf(userId))
+                .setCommentId(commentId);
         myBatisBatchExecutor.executeBatch(sqlSession -> {
             ProductCommentAppendMapper batchAppendMapper = sqlSession.getMapper(ProductCommentAppendMapper.class);
             ProductCommentMapper batchCommentMapper = sqlSession.getMapper(ProductCommentMapper.class);
@@ -207,6 +221,12 @@ public class ProductCommentServiceImpl extends ServiceImpl<ProductCommentMapper,
             return null;
         });
         RedisConnector.delete(firstCommentKey);
+        String destination = MqOrderConstant.TOPIC_ORDER + ":" + MqOrderConstant.TAG_ORDER_STATUS;
+        HashMap<String, Object> mqMessageMap = new HashMap<>(2);
+        System.out.println("------------orderNo:" + appendProductFirstCommentDTO.getOrderNo());
+        mqMessageMap.put(OrderStatusConsumer.ORDER_NO, appendProductFirstCommentDTO.getOrderNo());
+        mqMessageMap.put(OrderStatusConsumer.ORDER_STATUS_ENUM, OrderStatusEnum.REVIEWED.getValue());
+        rocketMQTemplate.convertAndSend(destination, mqMessageMap);
         return Result.success();
     }
 
@@ -232,8 +252,8 @@ public class ProductCommentServiceImpl extends ServiceImpl<ProductCommentMapper,
                 log.error(MessageConstant.DATE_TIME_PARSE_ERROR);
                 return Result.error(MessageConstant.DATE_TIME_PARSE_ERROR);
             }
-        }else {
-            endCommentCreateTime=LocalDateTime.now();
+        } else {
+            endCommentCreateTime = LocalDateTime.now();
         }
         Long sortId = cursorCommonEntity.getSortId();
         Integer querySize = cursorCommonEntity.getQuerySize();
@@ -299,8 +319,8 @@ public class ProductCommentServiceImpl extends ServiceImpl<ProductCommentMapper,
                 log.error(MessageConstant.DATE_TIME_PARSE_ERROR);
                 return Result.error(MessageConstant.DATE_TIME_PARSE_ERROR);
             }
-        }else {
-            endCommentCreateTime=LocalDateTime.now();
+        } else {
+            endCommentCreateTime = LocalDateTime.now();
         }
         Long endCommentId = cursorCommonEntity.getSortId();
         Integer querySize = cursorCommonEntity.getQuerySize();
@@ -338,16 +358,16 @@ public class ProductCommentServiceImpl extends ServiceImpl<ProductCommentMapper,
                     );
             if (Objects.isNull(productCommentAppendSelectOne)) {
                 RedisConnector.setHashObject(appendCommentKey, emptyProductCommentAppend);
-                RedisConnector.expire(appendCommentKey,redisKeyTtlProperties.getProductAppendCommentTtl(),TimeUnit.SECONDS);
-            return Result.error(MessageConstant.DATA_ERROR);
+                RedisConnector.expire(appendCommentKey, redisKeyTtlProperties.getProductAppendCommentTtl(), TimeUnit.SECONDS);
+                return Result.error(MessageConstant.DATA_ERROR);
             }
             RedisConnector.setHashObject(appendCommentKey, productCommentAppendSelectOne);
-            RedisConnector.expire(appendCommentKey,redisKeyTtlProperties.getProductAppendCommentTtl(),TimeUnit.SECONDS);
+            RedisConnector.expire(appendCommentKey, redisKeyTtlProperties.getProductAppendCommentTtl(), TimeUnit.SECONDS);
             ProductAppendCommentVO productAppendCommentVO = copyMapper.productCommentAppendToProductCommentAppendVO(productCommentAppendSelectOne);
             return Result.success(productAppendCommentVO);
         }
         //空对象过滤
-        if (productCommentAppend.getId().equals(DataConstant.ZERO_LONG)){
+        if (productCommentAppend.getId().equals(DataConstant.ZERO_LONG)) {
             return Result.error(MessageConstant.DATA_ERROR);
         }
         ProductAppendCommentVO productAppendCommentVO = copyMapper.productCommentAppendToProductCommentAppendVO(productCommentAppend);

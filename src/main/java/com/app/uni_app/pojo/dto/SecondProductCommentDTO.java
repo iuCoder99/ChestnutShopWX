@@ -31,6 +31,7 @@ public class SecondProductCommentDTO {
     @Schema(description = "商品规格 ID", example = "20001")
     private String productSpecId;
 
+
     /**
      * 父评论ID（一级评论传0或null，回复评论传对应父评论ID）
      */

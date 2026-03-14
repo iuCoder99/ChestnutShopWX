@@ -23,9 +23,9 @@ public class FirstProductCommentDTO {
     @NotBlank(message = "商品规格文本不能为空")
     private String productSpecText;
 
-    @Schema(description = "订单 ID", requiredMode = Schema.RequiredMode.REQUIRED, example = "30001")
-    @NotBlank(message = "订单 ID不能为空")
-    private String orderId;
+    @Schema(description = "订单单号", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotBlank(message = "订单单号不能为空")
+    private String orderNo;
 
     @Schema(description = "用户昵称", requiredMode = Schema.RequiredMode.REQUIRED, example = "张三123")
     @NotBlank(message = "用户昵称不能为空")
@@ -40,7 +40,6 @@ public class FirstProductCommentDTO {
     private String content;
 
     @Schema(description = "评论图片URL集合（JSON数组格式）", requiredMode = Schema.RequiredMode.REQUIRED, example = "[\"https://example.com/img1.jpg\",\"https://example.com/img2.jpg\"]")
-    @NotBlank(message = "评论图片不能为空")
     private String imageUrls;
 
     @Schema(description = "商品评分:1-5星",requiredMode = Schema.RequiredMode.REQUIRED)

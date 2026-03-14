@@ -165,7 +165,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             order = orderMapper.getOrderDesc(orderNo);
             order = Objects.isNull(order) ? emptyOrder : order;
             RedisConnector.setHashObject(key, order);
-            RedisConnector.expire(key,redisKeyTtlProperties.getOrderTtl(),TimeUnit.SECONDS);
+            RedisConnector.expire(key, redisKeyTtlProperties.getOrderTtl(), TimeUnit.SECONDS);
         }
         if (order.equals(emptyOrder)) {
             return Result.error(MessageConstant.ORDER_NOT_FOUND);
@@ -381,5 +381,36 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         }
         List<OrderWithItemVO> orderWithItemVOs = orderList.stream().map(order -> copyMapper.orderToOrderWithItemVO(order)).toList();
         return Result.success(orderWithItemVOs);
+    }
+
+    /**
+     * 根据订单ID 或 订单号来修改订单状态
+     * 可以其中以个参数传null
+     * @param orderId          订单 ID
+     * @param orderNo         订单号
+     * @param orderStatusEnum 订单修改后的状态
+     * @return
+     */
+    @Override
+    @RemoveOrderSessionAnnotation
+    public Boolean updateOrderStatus(Long orderId , String orderNo, OrderStatusEnum orderStatusEnum) {
+        if ( Objects.isNull(orderStatusEnum)) {
+            return false;
+        }
+       if (Objects.isNull(orderId) && Objects.isNull(orderNo)){
+           return false;
+       }
+       boolean isSuccess;
+        if (Objects.isNull(orderId)) {
+            isSuccess = lambdaUpdate().eq(Order::getOrderNo, orderNo)
+                .set(Order::getStatus, orderStatusEnum.getCode()).update();
+        } else {
+            isSuccess = lambdaUpdate().eq(Order::getId, orderId)
+                .set(Order::getStatus, orderStatusEnum.getCode()).update();
+        }
+        if (isSuccess) {
+            RedisConnector.delete(RedisKeyGenerator.orderKey(orderNo));
+        }
+        return isSuccess;
     }
 }

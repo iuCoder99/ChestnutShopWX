@@ -14,31 +14,41 @@ public enum OrderStatusEnum {
     /**
      * 待支付
      */
-    PENDING_PAYMENT("pendingPayment", 1, "待支付",2),
+    PENDING_PAYMENT("pendingPayment", 1, "待支付", 2),
     /**
      * 待确认
      */
-    PENDING_CONFIRM("pendingConfirm", 2, "待确认",-1),
+    PENDING_CONFIRM("pendingConfirm", 2, "待确认", 1),
     /**
      * 待发货
      */
-    PENDING_SHIPMENT("pendingShipment", 3, "待发货",3),
+    PENDING_SHIPMENT("pendingShipment", 3, "待发货", 3),
     /**
      * 待收货
      */
-    PENDING_RECEIPT("pendingReceipt", 4, "待收货",4),
+    PENDING_RECEIPT("pendingReceipt", 4, "待收货", 4),
     /**
      * 已完成
      */
-    COMPLETED("completed", 5, "已完成",5),
+    COMPLETED("completed", 5, "已完成", 5),
     /**
      * 已取消
      */
-    CANCELLED("cancelled", 6, "已取消",-1),
+    CANCELLED("cancelled", 6, "已取消", 1),
     /**
      * 售后
      */
-    AFTER_SALE("afterSale", 7, "售后",5);
+    AFTER_SALE("afterSale", 7, "售后", 5),
+
+    /**
+     * 已评价
+     */
+    EVALUATED("evaluated", 8, "已评价", 1),
+
+    /**
+     * 已追评
+     */
+    REVIEWED("reviewed", 9, "已追评", 1);
 
     @JsonValue
     private final String value;
