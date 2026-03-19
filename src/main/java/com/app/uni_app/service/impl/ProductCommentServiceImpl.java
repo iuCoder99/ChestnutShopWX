@@ -223,7 +223,6 @@ public class ProductCommentServiceImpl extends ServiceImpl<ProductCommentMapper,
         RedisConnector.delete(firstCommentKey);
         String destination = MqOrderConstant.TOPIC_ORDER + ":" + MqOrderConstant.TAG_ORDER_STATUS;
         HashMap<String, Object> mqMessageMap = new HashMap<>(2);
-        System.out.println("------------orderNo:" + appendProductFirstCommentDTO.getOrderNo());
         mqMessageMap.put(OrderStatusConsumer.ORDER_NO, appendProductFirstCommentDTO.getOrderNo());
         mqMessageMap.put(OrderStatusConsumer.ORDER_STATUS_ENUM, OrderStatusEnum.REVIEWED.getValue());
         rocketMQTemplate.convertAndSend(destination, mqMessageMap);
