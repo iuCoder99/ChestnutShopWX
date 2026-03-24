@@ -7,4 +7,8 @@ redis:
     cart-ttl: 21600 #购物车缓存
     order-ttl: 3600 #订单未支付过期
     product-first-comment-ttl: 43200 #商品一级评论缓存
+    product-second-comment-ttl: 43200 #商品二级评论缓存
     product-append-comment-ttl: 43200 #商品追加评论缓存
+    product-comment-count-ttl: 43200 #商品评论统计缓存
+    product-comment-user-id-set-ttl: 43200 #评论点赞用户 id 缓存
+    user-product-comment-like-id-set-ttl: 43200 #用户评论点过赞的 id 缓存

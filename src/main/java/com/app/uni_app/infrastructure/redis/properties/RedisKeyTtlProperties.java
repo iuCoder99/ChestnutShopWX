@@ -20,6 +20,15 @@ public class RedisKeyTtlProperties {
 
     private long productFirstCommentTtl;
 
+    private long productSecondCommentTtl;
+
     private long productAppendCommentTtl;
+
+    private long productCommentCountTtl;
+
+    private long productCommentUserIdSetTtl;
+
+    private long userProductCommentLikeIdSetTtl;
+
 
 }

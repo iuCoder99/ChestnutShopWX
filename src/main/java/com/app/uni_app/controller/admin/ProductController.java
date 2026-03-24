@@ -237,4 +237,20 @@ public class ProductController {
     }
 
 
+    @Operation(summary = "统计商品下评论数")
+    @GetMapping("/user/product/comment/count/show")
+    public Result<?> getProductCommentCount(@RequestParam @NotBlank String productId) {
+        return productCommentService.getProductCommentCount(productId);
+    }
+
+
+    @Operation(summary = "对商品进行点赞和取消点赞")
+    @PutMapping("/user/product/comment/like")
+    public Result<?> updateProductCommentLike(@RequestParam @NotBlank String productCommentId
+            , @RequestParam @NotNull Integer isLike
+            , @RequestParam @NotNull Integer isFirstComment) {
+        return productCommentService.updateProductCommentLike(productCommentId, isLike, isFirstComment);
+    }
+
+
 }

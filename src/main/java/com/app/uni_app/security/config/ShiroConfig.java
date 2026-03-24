@@ -2,6 +2,7 @@ package com.app.uni_app.security.config;
 
 import com.app.uni_app.properties.JwtProperties;
 import com.app.uni_app.security.filter.JwtFilter;
+import com.app.uni_app.security.filter.OptionalJwtFilter;
 import com.app.uni_app.security.realm.CustomRealm;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -15,6 +16,7 @@ import org.apache.shiro.web.mgt.DefaultWebSecurityManager;
 import org.apache.shiro.web.session.mgt.DefaultWebSessionManager;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreator;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -77,16 +79,25 @@ public class ShiroConfig {
     @Bean
     public JwtFilter jwtFilter(JwtProperties jwtProperties, @Lazy HandlerExceptionResolver handlerExceptionResolver) {
         JwtFilter jwtFilter = new JwtFilter();
-        jwtFilter.setJwtProperties(jwtProperties);
-        jwtFilter.setHandlerExceptionResolver(handlerExceptionResolver);
+        configureJwtFilter(jwtFilter, jwtProperties, handlerExceptionResolver);
+        return jwtFilter;
+    }
 
-        // 配置 Token 白名单缓存，减少解析开销，并处理解析失败时的快速降级
-        jwtFilter.setTokenWhitelistCache(Caffeine.newBuilder()
+    // 5.1 自定义可选JwtFilter
+    @Bean
+    public OptionalJwtFilter optionalJwtFilter(JwtProperties jwtProperties, @Lazy HandlerExceptionResolver handlerExceptionResolver) {
+        OptionalJwtFilter optionalJwtFilter = new OptionalJwtFilter();
+        configureJwtFilter(optionalJwtFilter, jwtProperties, handlerExceptionResolver);
+        return optionalJwtFilter;
+    }
+
+    private void configureJwtFilter(JwtFilter filter, JwtProperties jwtProperties, HandlerExceptionResolver handlerExceptionResolver) {
+        filter.setJwtProperties(jwtProperties);
+        filter.setHandlerExceptionResolver(handlerExceptionResolver);
+        filter.setTokenWhitelistCache(Caffeine.newBuilder()
                 .expireAfterWrite(java.time.Duration.ofMinutes(10))
                 .maximumSize(1000)
                 .build());
-
-        return jwtFilter;
     }
 
     /**
@@ -94,21 +105,31 @@ public class ShiroConfig {
      * 避免 UnavailableSecurityManagerException
      */
     @Bean
-    public FilterRegistrationBean<JwtFilter> registration(JwtFilter filter) {
+    public FilterRegistrationBean<JwtFilter> registration(@Qualifier("jwtFilter") JwtFilter filter) {
         FilterRegistrationBean<JwtFilter> registration = new FilterRegistrationBean<>(filter);
+        registration.setEnabled(false);
+        return registration;
+    }
+
+    @Bean
+    public FilterRegistrationBean<OptionalJwtFilter> optionalRegistration(@Qualifier("optionalJwtFilter") OptionalJwtFilter filter) {
+        FilterRegistrationBean<OptionalJwtFilter> registration = new FilterRegistrationBean<>(filter);
         registration.setEnabled(false);
         return registration;
     }
 
     // 6. 核心：Shiro过滤器工厂（无任何javax依赖）
     @Bean
-    public ShiroFilterFactoryBean shiroFilterFactoryBean(SecurityManager securityManager, JwtFilter jwtFilter) {
+    public ShiroFilterFactoryBean shiroFilterFactoryBean(SecurityManager securityManager,
+                                                         @Qualifier("jwtFilter") JwtFilter jwtFilter,
+                                                         @Qualifier("optionalJwtFilter") OptionalJwtFilter optionalJwtFilter) {
         ShiroFilterFactoryBean factoryBean = new ShiroFilterFactoryBean();
         factoryBean.setSecurityManager(securityManager);
 
         // 注册JwtFilter（Jakarta的Filter，Shiro 1.12完全兼容）
         Map<String, Filter> filters = new LinkedHashMap<>();
         filters.put("jwt", jwtFilter);
+        filters.put("optionalJwt", optionalJwtFilter);
         factoryBean.setFilters(filters);
 
         // 拦截规则（顺序：自上而下，公开接口在前）
@@ -126,7 +147,7 @@ public class ShiroConfig {
         filterChainDefinitionMap.put("/api/user/create/account", "anon");
         filterChainDefinitionMap.put("/api/user/forget/password", "anon");
         filterChainDefinitionMap.put("/api/user/change/password", "anon");
-        filterChainDefinitionMap.put("/api/user/product/comment/**/show", "anon");
+        filterChainDefinitionMap.put("/api/user/product/comment/**/show", "optionalJwt");
         filterChainDefinitionMap.put("/api/banner/list", "anon");
         filterChainDefinitionMap.put("/api/product/**", "anon");
 

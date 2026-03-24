@@ -31,9 +31,9 @@ public class JwtFilter extends AuthenticatingFilter {
 
 
     // 仅用setter注入（ShiroConfig中配置，避免@Resource冲突）
-    private JwtProperties jwtProperties;
-    private Cache<String, Claims> tokenWhitelistCache;
-    private HandlerExceptionResolver handlerExceptionResolver;
+    protected JwtProperties jwtProperties;
+    protected Cache<String, Claims> tokenWhitelistCache;
+    protected HandlerExceptionResolver handlerExceptionResolver;
 
     /**
      * 1
@@ -166,7 +166,7 @@ public class JwtFilter extends AuthenticatingFilter {
         }
     }
 
-    private String getRequestToken(HttpServletRequest request) {
+    protected String getRequestToken(HttpServletRequest request) {
        return request.getHeader(jwtProperties.getUserTokenName());
 
     }

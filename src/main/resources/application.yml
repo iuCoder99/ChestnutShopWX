@@ -21,7 +21,7 @@ spring:
   # 数据源公共配置（敏感信息在dev中）
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/uni_app?serverTimezone=UTC&useUnicode=true&characterEncoding=utf8&allowPublicKeyRetrieval=true&useSSL=false
+    url: jdbc:mysql://localhost:3306/uni_app?serverTimezone=UTC&useUnicode=true&characterEncoding=utf8&allowPublicKeyRetrieval=true&useSSL=false&allowMultiQueries=true
     username: ${spring.datasource.username:your_mysql_username_placeholder} # 敏感信息，dev配置中覆盖
     password: ${spring.datasource.password:your_mysql_password_placeholder} # 敏感信息，dev配置中覆盖
   mvc:

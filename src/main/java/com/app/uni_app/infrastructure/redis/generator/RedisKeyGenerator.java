@@ -154,7 +154,53 @@ public class RedisKeyGenerator {
      * @return
      */
     public static String appendCommentKey(Long firstCommentId) {
-        return RedisConstant.PREFIX_PRODUCT + RedisConstant.APPEND_COMMENT  + RedisConstant.FIRST_COMMENT+ firstCommentId;
+        return RedisConstant.PREFIX_PRODUCT + RedisConstant.APPEND_COMMENT + RedisConstant.FIRST_COMMENT + firstCommentId;
+    }
+
+
+    /**
+     * secondCommentKey
+     * product: + secondComment: + secondCommentId
+     * @param secondCommentId
+     * @return
+     */
+    public static String secondCommentKey(Long secondCommentId) {
+        return RedisConstant.PREFIX_PRODUCT + RedisConstant.SECOND_COMMENT + secondCommentId;
+    }
+
+    /**
+     * product: + productId + : +commentCount:
+     * @param productId
+     * @return
+     */
+    public static String productCommentCount(Long productId) {
+        return RedisConstant.PREFIX_PRODUCT + productId + ":" + RedisConstant.COMMENT_COUNT;
+    }
+
+    /**
+     * productCommentLikeList
+     * product: + commentLikeMessageList
+     */
+    public static String productCommentLikeMessageList() {
+        return RedisConstant.PREFIX_PRODUCT + RedisConstant.COMMENT_LIKE_MESSAGE_LIST;
+    }
+
+    /**
+     * productCommentUserIdList
+     * product: + comment: + commentId + : + user: +idList
+     * @param commentId
+     * @return
+     */
+    public static String productCommentUserIdList(Long commentId) {
+        return RedisConstant.PREFIX_PRODUCT + RedisConstant.COMMENT + commentId + ":" + RedisConstant.USER + RedisConstant.ID_LIST;
+    }
+
+    /**
+     * userProductCommentIdList
+     * product: + user: + user: + idList
+     */
+    public static String userProductCommentIdList(Long userId){
+        return RedisConstant.PREFIX_PRODUCT + RedisConstant.COMMENT + RedisConstant.USER + userId + RedisConstant.ID_LIST;
     }
 
 }

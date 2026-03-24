@@ -39,6 +39,9 @@ public class ProductSecondCommentVO {
     @Schema(description = "点赞总数")
     private String likeCount;
 
+    @Schema(description = "当前用户是否点赞")
+    private boolean like;
+
     @Schema(description = "被回复的用户 id")
     private String replyUserId;
 

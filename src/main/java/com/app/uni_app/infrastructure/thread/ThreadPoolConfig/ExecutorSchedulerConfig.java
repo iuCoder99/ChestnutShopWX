@@ -14,12 +14,12 @@ public class ExecutorSchedulerConfig {
     /**
      * 配置 ThreadPoolTaskExecutor 线程池
      */
-    @Bean(name = "taskExecutor") // 给线程池命名，便于指定使用
-    public ThreadPoolTaskExecutor taskExecutor() {
+    @Bean(name = "executorSchedulerCommon") // 给线程池命名，便于指定使用
+    public ThreadPoolTaskExecutor executorSchedulerCommon() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
 
-        executor.setCorePoolSize(5);          // 核心线程数
-        executor.setMaxPoolSize(10);          // 最大线程数
+        executor.setCorePoolSize(10);          // 核心线程数
+        executor.setMaxPoolSize(20);          // 最大线程数
         executor.setQueueCapacity(50);        // 任务队列容量
         executor.setKeepAliveSeconds(60);     // 空闲线程存活时间
         executor.setThreadNamePrefix(ThreadPoolConstant.PREFIX_BUSINESS_THREAD +THREAD_NAME); // 线程名前缀

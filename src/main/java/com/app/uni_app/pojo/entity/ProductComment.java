@@ -145,6 +145,12 @@ public class ProductComment {
     private Integer likeCount = 0;
 
     /**
+     * 用户是否点赞
+     */
+    @TableField(exist = false)
+    private boolean like = false;
+
+    /**
      * 审核状态：0=待审核，1=已通过，2=已驳回
      */
     @TableField("status")

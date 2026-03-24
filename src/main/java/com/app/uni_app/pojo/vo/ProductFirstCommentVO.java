@@ -54,6 +54,9 @@ public class ProductFirstCommentVO {
     @Schema(description = "点赞总数")
     private String likeCount;
 
+    @Schema(description = "当前用户是否点赞")
+    private boolean like;
+
     private LocalDateTime createTime;
 
     @Schema(description = "创建时间的业务文本,前端直接展示")

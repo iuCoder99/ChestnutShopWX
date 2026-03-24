@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.app.uni_app.mapper.ProductCommentLikeMapper">
+    <update id="batchUpdate">
+        insert into product_comment_like (comment_id, user_id, status)
+        values
+        <foreach collection="list" item="productCommentLike" separator=",">
+            (#{productCommentLike.commentId}, #{productCommentLike.userId}, #{productCommentLike.status})
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+        status = VALUES(status)
+    </update>
+</mapper>

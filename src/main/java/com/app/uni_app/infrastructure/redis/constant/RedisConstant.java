@@ -24,12 +24,16 @@ public class RedisConstant {
     public static final String COLLECTION = "collection:";
     public static final String USER_ID_LIST = "userIdList";
     public static final String PRODUCT = "product:";
+    public static final String COMMENT_LIKE_MESSAGE_LIST = "commentLikeMessageList";
     public static final String PRODUCT_SPEC = "productSpec:";
     public static final String HOT = "hot";
     public static final String ID_LIST="idList";
     public static final String ALL = "all";
+    public static final String COMMENT = "comment:";
     public static final String FIRST_COMMENT="firstComment:";
+    public static final String SECOND_COMMENT = "secondComment:";
     public static final String APPEND_COMMENT="appendComment:";
+    public static final String COMMENT_COUNT = "commentCount:";
 
 }
 
