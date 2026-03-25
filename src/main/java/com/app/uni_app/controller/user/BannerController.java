@@ -4,12 +4,14 @@ import com.app.uni_app.common.result.Result;
 import com.app.uni_app.pojo.dto.BannerDTO;
 import com.app.uni_app.pojo.dto.BannerSortDTO;
 import com.app.uni_app.pojo.dto.BannerStatusDTO;
+import com.app.uni_app.pojo.entity.Banner;
 import com.app.uni_app.service.BannerService;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api")
@@ -21,27 +23,23 @@ public class BannerController {
     /**
      * 获取首页联播图列表
      *
-     * @param pageNum
-     * @param pageSize
      * @return
      */
     @GetMapping("/banner/list")
     @Operation(summary = "查询首页联播图列表", description = "获取首页联播图列表")
-    public Result getBannerList(@RequestParam(value = "pageNum", defaultValue = "1") Integer pageNum, @RequestParam(value = "pageSize", defaultValue = "4") Integer pageSize) throws JsonProcessingException {
-        return bannerService.getBannerList(pageNum, pageSize);
+    public Result<List<Banner>> getBannerList(){
+        return bannerService.getBannerList();
     }
 
     /**
      * 用于 admin 获取联播图列表
      *
-     * @param pageNum
-     * @param pageSize
-     * @return
      */
     @GetMapping("/admin/banner/list")
     @Operation(summary = "管理员查询联播图列表", description = "管理端,管理员获取联播图列表")
-    public Result getBannerListByAdmin(@RequestParam("pageNum") Integer pageNum, @RequestParam("pageSize") Integer pageSize) throws JsonProcessingException {
-        return bannerService.getBannerList(pageNum, pageSize);
+    public Result<List<Banner>> getBannerListByAdmin(@RequestParam(name = "pageNum" , defaultValue = "1") Integer pageNum
+            , @RequestParam(name = "pageSize" , defaultValue = "10") Integer pageSize)  {
+        return bannerService.getBannerListAdmin(pageNum,pageSize);
     }
 
     /**
