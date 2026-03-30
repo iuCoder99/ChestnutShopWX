@@ -85,6 +85,24 @@ public class RedisConnector {
         }
     }
 
+
+    // ===================== Set 安全操作 =====================
+
+    /**
+     * 安全封装 Redis Set 的 add 方法
+     * 当 key 为空 / values 为null / values 数组长度为0时，直接跳过，不执行操作、不报错
+     * @param key Redis key
+     * @param values 要添加的元素（可变参数）
+     */
+    public static void safeAddToSet(String key, Object... values) {
+        // 核心校验：空key / 空参数 直接返回，不执行Redis操作
+        if (key == null || key.isBlank() || values == null || values.length == 0) {
+            return;
+        }
+        // 校验通过，执行原生add方法
+        opsForSet().add(key, values);
+    }
+
     /**
      * 通用的管道执行方法，允许自定义多条命令打包
      */

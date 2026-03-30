@@ -1,6 +1,7 @@
 package com.app.uni_app.infrastructure.redis.generator;
 
 import com.app.uni_app.infrastructure.redis.constant.RedisConstant;
+import com.app.uni_app.pojo.emums.CouponUseStatusEnum;
 
 /**
  * Redis key 拼接器
@@ -199,8 +200,69 @@ public class RedisKeyGenerator {
      * userProductCommentIdList
      * product: + user: + user: + idList
      */
-    public static String userProductCommentIdList(Long userId){
+    public static String userProductCommentIdList(Long userId) {
         return RedisConstant.PREFIX_PRODUCT + RedisConstant.COMMENT + RedisConstant.USER + userId + RedisConstant.ID_LIST;
     }
+
+
+    /**
+     * couponFixedTimeUnBeginZSet
+     * coupon: + couponFixedTimeUnBegin
+     */
+    public static String couponFixedTimeUnBeginZSet() {
+        return RedisConstant.PREFIX_COUPON + RedisConstant.COUPON_FIXED_TIME_UN_BEGIN;
+    }
+
+
+    /**
+     * couponFixedTimeInProgressZSet
+     * coupon: + couponFixedTimeInProgress
+     */
+    public static String couponFixedTimeInProgressZSet() {
+        return RedisConstant.PREFIX_COUPON + RedisConstant.COUPON_FIXED_TIME_IN_PROGRESS;
+    }
+
+
+    /**
+     * couponUseStatus
+     * coupon: + couponId + : + couponUseStatus: + key + idList
+     * @param couponId
+     * @param couponUseStatusEnum
+     * @return
+     */
+    public static String couponUseStatusIdSet(Long couponId, CouponUseStatusEnum couponUseStatusEnum) {
+        return RedisConstant.PREFIX_COUPON + couponId + ":" + RedisConstant.USE_STATUS + couponUseStatusEnum.getKey() + RedisConstant.ID_LIST;
+    }
+
+
+    /**
+     * couponDetail
+     * coupon: + couponId + : + detail:
+     * @param couponId
+     * @return
+     */
+    public static String couponDetail(Long couponId) {
+        return RedisConstant.PREFIX_COUPON + couponId + ":" + RedisConstant.DETAIL;
+    }
+
+    /**
+     * couponAfterReceiveTimeUnBeginZSet
+     * coupon:  + couponAfterReceiveTimeUnBegin
+     * @return
+     */
+    public static String couponAfterReceiveTimeUnBeginZSet() {
+        return RedisConstant.PREFIX_COUPON  + ":" + RedisConstant.AFTER_RECEIVE_TIME_UN_BEGIN;
+    }
+
+
+    /**
+     * couponAfterReceiveTimeInProgressZSet
+     * coupon: + couponAfterReceiveTimeInProgress
+     * @return
+     */
+    public static String couponAfterReceiveTimeInProgressZSet() {
+        return RedisConstant.PREFIX_COUPON + RedisConstant.AFTER_RECEIVE_TIME_IN_PROGRESS;
+    }
+
 
 }

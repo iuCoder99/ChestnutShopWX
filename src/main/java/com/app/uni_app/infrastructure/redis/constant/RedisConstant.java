@@ -13,6 +13,7 @@ public class RedisConstant {
     public static final String PREFIX_CART = "cart:";
     public static final String PREFIX_CATEGORY= "category:";
     public static final String PREFIX_ORDER = "order:";
+    public static final String PREFIX_COUPON = "coupon:";
     public static final String USER = "user:";
     public static final String ORDER_NO = "orderNo:";
     public static final String REFRESH = "refresh:";
@@ -34,6 +35,13 @@ public class RedisConstant {
     public static final String SECOND_COMMENT = "secondComment:";
     public static final String APPEND_COMMENT="appendComment:";
     public static final String COMMENT_COUNT = "commentCount:";
+    public static final String USE_STATUS = "useStatus:";
+
+    public static final String COUPON_FIXED_TIME_UN_BEGIN = "couponFixedTimeUnBegin";
+    public static final String COUPON_FIXED_TIME_IN_PROGRESS = "couponFixedTimeInProgress";
+
+    public static final String AFTER_RECEIVE_TIME_UN_BEGIN = "afterReceiveTimeUnBegin";
+    public static final String AFTER_RECEIVE_TIME_IN_PROGRESS = "afterReceiveTimeInProgress";
 
 }
 

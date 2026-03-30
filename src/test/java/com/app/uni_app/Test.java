@@ -6,12 +6,12 @@ import com.app.uni_app.infrastructure.redis.connect.RedisConnector;
 import com.app.uni_app.mapper.CartMapper;
 import com.app.uni_app.pojo.entity.Product;
 import com.app.uni_app.pojo.entity.ProductSpec;
+import com.app.uni_app.service.impl.CouponServiceImpl;
 import com.fasterxml.jackson.core.type.TypeReference;
 import jakarta.annotation.Resource;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -21,6 +21,9 @@ public class Test {
 
     @Resource
     private CartMapper cartMapper;
+
+    @Resource
+    private CouponServiceImpl couponService;
 
     @org.junit.jupiter.api.Test
     void test1() {
@@ -91,7 +94,6 @@ public class Test {
 
     @org.junit.jupiter.api.Test
     public void test4() {
-        System.out.println("time:"+ LocalDateTime.now());
-
+        couponService.updateCouponRedisCache();
     }
 }

@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.app.uni_app.mapper.CouponMapper">
+
+    <resultMap id="CouponWithMutexGroupAndScopeDetailResultMap" type="com.app.uni_app.pojo.entity.Coupon">
+
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="coupon_no" property="couponNo" jdbcType="VARCHAR"/>
+        <result column="activity_name" property="activityName" jdbcType="VARCHAR"/>
+        <result column="coupon_type" property="couponType" jdbcType="TINYINT"/>
+        <result column="face_value" property="faceValue" jdbcType="DECIMAL"/>
+        <result column="discount_rate" property="discountRate" jdbcType="DECIMAL"/>
+        <result column="max_discount" property="maxDiscount" jdbcType="DECIMAL"/>
+        <result column="min_spend" property="minSpend" jdbcType="DECIMAL"/>
+        <result column="total_quota" property="totalQuota" jdbcType="INTEGER"/>
+        <result column="used_quota" property="usedQuota" jdbcType="INTEGER"/>
+        <result column="receive_quota" property="receiveQuota" jdbcType="INTEGER"/>
+        <result column="valid_mode" property="validMode" jdbcType="TINYINT"/>
+        <result column="valid_start" property="validStart" jdbcType="TIMESTAMP"/>
+        <result column="valid_end" property="validEnd" jdbcType="TIMESTAMP"/>
+        <result column="receive_valid_days" property="receiveValidDays" jdbcType="INTEGER"/>
+        <result column="limit_per_person" property="limitPerPerson" jdbcType="INTEGER"/>
+        <result column="user_limit_type" property="userLimitType" jdbcType="TINYINT"/>
+        <result column="use_scope" property="useScope" jdbcType="TINYINT"/>
+        <result column="mutex_group_code" property="mutexGroupCode" jdbcType="BIGINT"/>
+        <result column="status" property="status" jdbcType="TINYINT"/>
+        <result column="is_elimination" property="isElimination" jdbcType="TINYINT"/>
+        <result column="release_time" property="releaseTime" jdbcType="TIMESTAMP"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+
+        <collection property="couponMutexGroupList" javaType="java.util.List"
+                    ofType="com.app.uni_app.pojo.entity.CouponMutexGroup"
+                    resultMap="CouponMutexGroupResultMap" />
+
+        <collection property="couponScopeDetailList" javaType="java.util.List"
+                    ofType="com.app.uni_app.pojo.entity.CouponScopeDetail"
+                    resultMap="CouponScopeDetailResultMap"/>
+    </resultMap>
+
+    <resultMap id="CouponMutexGroupResultMap" type="com.app.uni_app.pojo.entity.CouponMutexGroup">
+        <id column="mutex_id" property="id" jdbcType="BIGINT"/>
+        <result column="mutex_group_name" property="groupName" jdbcType="VARCHAR"/>
+        <result column="mutex_group_code" property="groupCode" jdbcType="BIGINT"/>
+        <result column="mutex_remark" property="remark" jdbcType="VARCHAR"/>
+        <result column="mutex_create_time" property="createTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <resultMap id="CouponScopeDetailResultMap" type="com.app.uni_app.pojo.entity.CouponScopeDetail">
+        <id column="scope_id" property="id" jdbcType="BIGINT"/>
+        <result column="scope_coupon_id" property="couponId" jdbcType="BIGINT"/>
+        <result column="scope_type" property="scopeType" jdbcType="INTEGER"/>
+        <result column="scope_target_id" property="targetId" jdbcType="BIGINT"/>
+        <result column="scope_create_time" property="createTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <select id="selectCouponWithMutexCroupAndScopeDetail" resultMap="CouponWithMutexGroupAndScopeDetailResultMap">
+            SELECT
+                c.id,
+                c.coupon_no,
+                c.activity_name,
+                c.coupon_type,
+                c.face_value,
+                c.discount_rate,
+                c.max_discount,
+                c.min_spend,
+                c.total_quota,
+                c.used_quota,
+                c.receive_quota,
+                c.valid_mode,
+                c.valid_start,
+                c.valid_end,
+                c.receive_valid_days,
+                c.limit_per_person,
+                c.user_limit_type,
+                c.use_scope,
+                c.mutex_group_code,
+                c.status,
+                c.is_elimination,
+                c.release_time,
+                c.create_time,
+                c.update_time,
+
+
+                cmg.id          AS mutex_id,
+                cmg.group_name  AS mutex_group_name,
+                cmg.group_code  AS mutex_group_code,
+                cmg.remark      AS mutex_remark,
+                cmg.create_time AS mutex_create_time,
+
+
+                csd.id          AS scope_id,
+                csd.coupon_id   AS scope_coupon_id,
+                csd.scope_type  AS scope_type,
+                csd.target_id   AS scope_target_id,
+                csd.create_time AS scope_create_time
+
+            FROM coupon c
+                     LEFT JOIN coupon_mutex_group cmg
+                               ON c.mutex_group_code = cmg.group_code
+                     LEFT JOIN coupon_scope_detail csd
+                               ON c.id = csd.coupon_id
+            WHERE c.is_elimination = 0
+            order by c.create_time desc
+
+    </select>
+</mapper>

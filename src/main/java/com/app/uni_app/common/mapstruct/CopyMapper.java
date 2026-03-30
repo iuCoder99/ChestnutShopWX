@@ -60,4 +60,6 @@ public interface CopyMapper {
     ProductSecondCommentVO productCommentToProductSecondCommentVO(ProductComment productComment);
 
     ProductAppendCommentVO productCommentAppendToProductCommentAppendVO(ProductCommentAppend productCommentAppend);
+
+    Coupon couponCreateDTOToCoupon(CouponCreateDTO couponCreateDTO);
 }

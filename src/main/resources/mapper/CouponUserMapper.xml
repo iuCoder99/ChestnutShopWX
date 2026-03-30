@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.app.uni_app.mapper.CouponUserMapper">
+    <update id="batchUpdateSameField">
+        UPDATE coupon_user
+        SET use_status = ELT(
+        FIND_IN_SET(id,
+        <foreach collection="idList" item="id" separator=",">#{id}</foreach>
+        ),
+        <foreach collection="valueList" item="val" separator=",">#{val}</foreach>
+        )
+        WHERE id IN
+        <foreach collection="idList" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+</mapper>

@@ -57,6 +57,7 @@ rocketmq:
   consumer:
     group: my-consumer-group
     message-model: BROADCASTING
+    pull-batch-size: 100
 
 
 # SpringDoc 核心配置（阿里规范：配置项需注释，关键参数可配置）
