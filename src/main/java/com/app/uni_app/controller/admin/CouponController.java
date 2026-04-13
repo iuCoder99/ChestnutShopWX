@@ -14,16 +14,16 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api")
-@Tag( name = "优惠劵管理")
+@Tag(name = "优惠劵管理")
 @RequiredArgsConstructor
 public class CouponController {
 
-    private CouponService couponService;
+    private final CouponService couponService;
 
 
     @PostMapping("/admin/coupon/release")
-    public Result<?> saveCouponAdmin(@RequestBody @Valid @NotNull CouponCreateDTO couponCreateDTO){
-       return couponService.saveCouponAdmin(couponCreateDTO);
+    public Result<?> saveCouponAdmin(@RequestBody @Valid @NotNull CouponCreateDTO couponCreateDTO) {
+        return couponService.saveCouponAdmin(couponCreateDTO);
     }
 
 

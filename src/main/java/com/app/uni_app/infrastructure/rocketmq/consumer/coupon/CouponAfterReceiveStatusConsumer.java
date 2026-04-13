@@ -27,6 +27,7 @@ public class CouponAfterReceiveStatusConsumer implements RocketMQListener<List<M
 
     private final CouponUserMapper couponUserMapper;
 
+
     /**
      * 批量消费 N 天后优惠券 更改状态
      * @param messageMaps 信息列表

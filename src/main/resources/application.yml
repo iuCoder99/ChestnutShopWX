@@ -18,7 +18,7 @@ spring:
     active: dev  # 激活开发环境配置
   application:
     name: uni-app
-  # 数据源公共配置（敏感信息在dev中）
+  # 数据源公共配置（敏感信息在dev中)
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/uni_app?serverTimezone=UTC&useUnicode=true&characterEncoding=utf8&allowPublicKeyRetrieval=true&useSSL=false&allowMultiQueries=true
@@ -33,6 +33,11 @@ spring:
       host: localhost
       port: 6379
       database: 0
+  elasticsearch:
+    uris: http://localhost:9200
+    connection-timeout: 5s
+    socket-timeout: 10s
+
 
 # MyBatis-Plus公共配置
 mybatis-plus:
