@@ -30,7 +30,7 @@ public interface ProductMapper extends BaseMapper<Product> {
 
     List<Product> selectRelatedByCategoryId(String productId, Integer limit);
 
-    List<Product> getBriefProduct(@Param("productIdsList") List<String> productIdsList);
+    List<Product> getBriefProduct(@Param("productIdsList") List<Long> productIdsList);
 
     @Select("select max(id) as maxProductIdInData,min(id) as minProductIdInData from product")
     Map<String,Long> getMaxAndMinProductIdMap();

@@ -176,7 +176,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
         }
         Map<String, Object> map = new HashMap<>(2);
         map.put(Category.Fields.id, id);
-        map.put(Category.Fields.status, CommonStatus.getValueByNumber(Integer.valueOf(status)));
+        map.put(Category.Fields.status, CommonStatus.getValueByNumber(Integer.parseInt(status)));
         caffeineUtils.invalidateCategoryTree();
         return Result.success(map);
     }

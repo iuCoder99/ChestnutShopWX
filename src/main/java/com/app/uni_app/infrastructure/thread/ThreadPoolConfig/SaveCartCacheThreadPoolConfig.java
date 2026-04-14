@@ -34,7 +34,7 @@ public class SaveCartCacheThreadPoolConfig {
     private static final String THREAD_NAME = "Save-Cart-Cache-";
 
     /**
-     * 线程池Bean名称（可通过@Qualifier("businessThreadPool")指定注入）
+     * 线程池Bean名称
      * @return 线程池执行器
      */
     @Bean(name = "saveCartRedisCacheToMysqlThreadPool")

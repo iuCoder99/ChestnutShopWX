@@ -30,7 +30,7 @@ public enum CommonStatus {
      */
     public static String getValueByNumber(Integer number){
         for (CommonStatus commonStatus : values()) {
-            if (commonStatus.number.equals(number)){
+            if (commonStatus.number==number){
                 return commonStatus.value;
             }
         }

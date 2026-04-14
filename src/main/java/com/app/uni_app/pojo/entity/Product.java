@@ -11,7 +11,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import java.io.Serial;
 import java.io.Serializable;
 import java.math.BigDecimal;
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -125,7 +125,7 @@ public class Product implements Serializable {
     @DateTimeFormat(pattern = DatePatternConstants.DATE_TIME_FORM)
     @JsonFormat(pattern = DatePatternConstants.DATE_TIME_FORM)
     @TableField(value = "create_time", fill = FieldFill.INSERT) // 插入时自动填充
-    private Date createTime;
+    private LocalDateTime createTime;
 
     /**
      * 更新时间
@@ -133,6 +133,6 @@ public class Product implements Serializable {
     @DateTimeFormat(pattern = DatePatternConstants.DATE_TIME_FORM)
     @JsonFormat(pattern = DatePatternConstants.DATE_TIME_FORM)
     @TableField(value = "update_time", fill = FieldFill.INSERT_UPDATE) // 插入/更新时自动填充
-    private Date updateTime;
+    private LocalDateTime updateTime;
 
 }

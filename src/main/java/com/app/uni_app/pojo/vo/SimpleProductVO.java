@@ -3,13 +3,19 @@ package com.app.uni_app.pojo.vo;
 import com.app.uni_app.common.constant.DatePatternConstants;
 import com.app.uni_app.pojo.emums.CommonStatus;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.math.BigDecimal;
-import java.util.Date;
+import java.time.LocalDateTime;
 
 @Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class SimpleProductVO  {
 
     /**
@@ -28,6 +34,11 @@ public class SimpleProductVO  {
     private String name;
 
     /**
+     * 商品封面图 URL
+     */
+    private String image;
+
+    /**
      * 商品卖点/简介
      */
     private String sellPoint;
@@ -38,24 +49,9 @@ public class SimpleProductVO  {
     private BigDecimal price;
 
     /**
-     * 企业批量价格（有值则表示启用企业价）
+     * 状态（0-下架，1-上架）
      */
-    private BigDecimal enterprisePrice;
-
-    /**
-     * 总库存数量（所有规格库存之和）
-     */
-    private Long stock;
-
-    /**
-     * 商品封面图 URL
-     */
-    private String image;
-
-    /**
-     * 商品详情（富文本）
-     */
-    private String description;
+    private CommonStatus status;
 
     /**
      * 浏览量
@@ -67,18 +63,11 @@ public class SimpleProductVO  {
      */
     private Long salesCount;
 
-    /**
-     * 状态（0-下架，1-上架）
-     */
-    private CommonStatus status;
-
-
+    @DateTimeFormat(pattern = DatePatternConstants.DATE_TIME_FORM)
+    @JsonFormat(pattern = DatePatternConstants.DATE_TIME_FORM)
+    private LocalDateTime createTime;
 
     @DateTimeFormat(pattern = DatePatternConstants.DATE_TIME_FORM)
     @JsonFormat(pattern = DatePatternConstants.DATE_TIME_FORM)
-    private Date createTime;
-
-    @DateTimeFormat(pattern = DatePatternConstants.DATE_TIME_FORM)
-    @JsonFormat(pattern = DatePatternConstants.DATE_TIME_FORM)
-    private Date updateTime;
+    private LocalDateTime updateTime;
 }

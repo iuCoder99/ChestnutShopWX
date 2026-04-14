@@ -40,17 +40,28 @@ public class EsIndexInitializerServiceImpl implements EsIndexInitializerService 
 
             Function<CreateIndexRequest.Builder, ObjectBuilder<CreateIndexRequest>> request = builder ->
                     builder.index(indexName)
-                            .settings(IndexSettings.of(s -> s.numberOfShards(String.valueOf(1)).numberOfReplicas(String.valueOf(0))))
+                            .settings(IndexSettings.of(s -> s
+                                    .numberOfShards("1")
+                                    .numberOfReplicas("0")
+                            ))
                             .mappings(m -> m
                                     .properties(ProductDocument.Fields.id, p -> p.long_(l -> l))
                                     .properties(ProductDocument.Fields.categoryId, p -> p.long_(l -> l))
-
                                     .properties(ProductDocument.Fields.name, p -> p.text(t -> t
-                                            .fields("keyword", k -> k.keyword(kw -> kw))
+                                            .fields("keyword", k -> k.keyword(kw -> kw.ignoreAbove(256)))
                                     ))
-
+                                    .properties(ProductDocument.Fields.image, p -> p.keyword(k -> k))
                                     .properties(ProductDocument.Fields.sellPoint, p -> p.text(t -> t))
+                                    // 价格：scaledFloat 最适合金额，scalingFactor=100 表示精确到分
                                     .properties(ProductDocument.Fields.price, p -> p.scaledFloat(f -> f.scalingFactor(100.0)))
+                                    // 商品状态：枚举 0/1/2
+                                    .properties(ProductDocument.Fields.status, p -> p.integer(i -> i))
+                                    // 浏览量：排序、筛选
+                                    .properties(ProductDocument.Fields.viewCount, p -> p.long_(l -> l))
+                                    // 销量：排序、筛选
+                                    .properties(ProductDocument.Fields.salesCount, p -> p.long_(l -> l))
+                                    .properties(ProductDocument.Fields.createTime, p -> p.date(d -> d))
+                                    .properties(ProductDocument.Fields.updateTime, p -> p.date(d -> d))
                             );
 
             elasticsearchClient.indices().create(request);

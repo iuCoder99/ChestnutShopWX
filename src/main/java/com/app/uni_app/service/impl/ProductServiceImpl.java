@@ -11,29 +11,39 @@ import com.app.uni_app.common.util.BloomFilterUtils;
 import com.app.uni_app.common.util.CaffeineUtils;
 import com.app.uni_app.common.util.JacksonUtils;
 import com.app.uni_app.common.util.SessionUtils;
+import com.app.uni_app.infrastructure.es.common.mapstruct.EsCopyMapper;
+import com.app.uni_app.infrastructure.es.document.ProductDocument;
+import com.app.uni_app.infrastructure.es.service.ProductDocumentService;
 import com.app.uni_app.infrastructure.redis.connect.RedisConnector;
 import com.app.uni_app.infrastructure.redis.connect.StringRedisConnector;
 import com.app.uni_app.infrastructure.redis.generator.RedisKeyGenerator;
 import com.app.uni_app.infrastructure.redis.properties.RedisKeyTtlProperties;
+import com.app.uni_app.infrastructure.rocketmq.constant.failed.MqFailedMessageConstant;
+import com.app.uni_app.infrastructure.rocketmq.constant.product.MqProductConstant;
 import com.app.uni_app.mapper.ProductMapper;
 import com.app.uni_app.pojo.emums.CommonStatus;
 import com.app.uni_app.pojo.emums.ProductSortType;
+import com.app.uni_app.pojo.entity.MqConsumerFailedMsg;
 import com.app.uni_app.pojo.entity.Product;
 import com.app.uni_app.pojo.entity.ProductCollection;
 import com.app.uni_app.pojo.entity.ProductSpec;
 import com.app.uni_app.pojo.vo.ProductSpecVO;
 import com.app.uni_app.pojo.vo.SimpleProductVO;
 import com.app.uni_app.service.CollectionService;
+import com.app.uni_app.service.MqConsumerFailedMsgService;
 import com.app.uni_app.service.ProductService;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.fasterxml.jackson.core.type.TypeReference;
 import jakarta.annotation.Nonnull;
-import jakarta.annotation.Resource;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.rocketmq.client.producer.SendCallback;
+import org.apache.rocketmq.client.producer.SendResult;
+import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.SessionCallback;
@@ -51,31 +61,46 @@ import java.util.stream.Collectors;
  */
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         implements ProductService {
-    @Resource
-    private ProductMapper productMapper;
 
-    @Resource
-    private CollectionService collectionService;
+    private final ProductMapper productMapper;
 
-    @Resource
-    private CopyMapper copyMapper;
 
-    @Resource
-    private SessionUtils sessionUtils;
+    private final CollectionService collectionService;
 
-    @Resource
-    private CaffeineUtils caffeineUtils;
 
-    @Resource
-    private BloomFilterUtils bloomFilterUtils;
+    private final ProductDocumentService productDocumentService;
 
-    @Resource
-    private RedisKeyTtlProperties redisKeyTtlProperties;
+
+    private final CopyMapper copyMapper;
+
+
+    private final EsCopyMapper esCopyMapper;
+
+
+    private final RocketMQTemplate rocketMQTemplate;
+
+
+    private final SessionUtils sessionUtils;
+
+
+    private final CaffeineUtils caffeineUtils;
+
+
+    private final BloomFilterUtils bloomFilterUtils;
+
+
+    private final MqConsumerFailedMsgService mqConsumerFailedMsgService;
+
+
+    private final RedisKeyTtlProperties redisKeyTtlProperties;
 
     private static final String PRODUCT_LIST = "productList";
     private static final String END_PRODUCT_ID = "endProductId";
+
+    private static final SimpleProductVO emptySimpleProductVO = SimpleProductVO.builder().id(DataConstant.ZERO_LONG).build();
 
     /**
      * 获取热门商品
@@ -108,7 +133,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
                     .collect(Collectors.toList());
         }
         List<SimpleProductVO> simpleProductVOs = hotProducts.stream()
-                .map(hotProduct -> copyMapper.productToSimpleProductVO(hotProduct)).toList();
+                .map(copyMapper::productToSimpleProductVO).toList();
         return Result.success(simpleProductVOs);
 
 
@@ -116,21 +141,83 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
 
     /**
      * 获取列表商品简单介绍
-     *
-     * @param productIds
-     * @return
+     * 进行 es 查询 获取数据 , 如果没有查询为 null , 在数据库进行查询 ,再进行 mq 消息通知进行数据同步
+     * @param productIds 列表商品 ids: 1,2,3
+     * @return 简单商品列表
      */
     @Override
-    public Result getBriefProduct(String productIds) {
+    public Result<?> getBriefProduct(String productIds) {
         if (StringUtils.isBlank(productIds)) {
             return Result.success(CollectionUtils.emptyCollection());
         }
-        List<String> productIdsList = Arrays.stream(StringUtils.split(productIds, ",")).toList();
-        List<Product> list = productMapper.getBriefProduct(productIdsList);
-        List<SimpleProductVO> simpleProductVOS = list.stream()
-                .map(product -> copyMapper.productToSimpleProductVO(product)).toList();
-        return Result.success(simpleProductVOS);
+        List<Long> productIdList = Arrays.stream(StringUtils.split(productIds, ",")).map(Long::valueOf).toList();
+        Map<Long, SimpleProductVO> resultMap = new HashMap<>(productIdList.size());
+        List<SimpleProductVO> resultList = new ArrayList<>(productIdList.size());
+        for (Long id : productIdList) {
+            resultMap.put(id, null);
+        }
+        List<SimpleProductVO> simpleProductVOListByEs = productDocumentService.getProductDocumentByIdList(productIdList).stream().map(esCopyMapper::ProductDocumentToSimpleProductVO).toList();
+        for (SimpleProductVO s : simpleProductVOListByEs) {
+            resultMap.put(s.getId(), s);
+        }
+        if (productIdList.size() == simpleProductVOListByEs.size()) {
+            for (Long id : productIdList) {
+                SimpleProductVO simpleProductVO = resultMap.get(id);
+                resultList.add(simpleProductVO);
+            }
+            return Result.success(resultList);
+        }
+        ArrayList<Long> needQueryBySQLIdList = new ArrayList<>();
+        resultMap.forEach((key, value) -> {
+            if (Objects.isNull(value)) {
+                needQueryBySQLIdList.add(key);
+            }
+        });
+        List<Product> list = productMapper.getBriefProduct(needQueryBySQLIdList);
+        asyncSaveProductDocumentBySendMqMessage(list, 0);
+        list.stream().map(copyMapper::productToSimpleProductVO)
+                .forEach(simpleProductVO -> resultMap.put(simpleProductVO.getId(), simpleProductVO));
+        for (int i = 0; i < productIdList.size(); i++) {
+            Long id = productIdList.get(i);
+            SimpleProductVO simpleProductVO = resultMap.get(id);
+            resultList.add(i, simpleProductVO);
+        }
+        return Result.success(resultList);
 
+    }
+
+    /**
+     * 异步通知 mq 同步商品文档到 es
+     * 异常发送三次
+     * @param productList 商品文档列表
+     */
+    void asyncSaveProductDocumentBySendMqMessage(List<Product> productList, int retryCount) {
+        List<ProductDocument> productDocumentList = productList.stream()
+                .map(esCopyMapper::ProductToProductDocument)
+                .toList();
+        String destination = MqProductConstant.TOPIC_PRODUCT + ":" + MqProductConstant.TAG_PRODUCT_DOCUMENT_SYNC;
+        int maxRetry = 2;
+        rocketMQTemplate.asyncSend(destination, productDocumentList, new SendCallback() {
+            @Override
+            public void onSuccess(SendResult sendResult) {
+            }
+
+            @Override
+            public void onException(Throwable throwable) {
+                if (retryCount < maxRetry) {
+                    asyncSaveProductDocumentBySendMqMessage(productList, retryCount + 1);
+                } else {
+                    MqConsumerFailedMsg failedMsg = MqConsumerFailedMsg.builder()
+                            .topic(MqProductConstant.TOPIC_PRODUCT)
+                            .tag(MqProductConstant.TAG_PRODUCT_DOCUMENT_SYNC)
+                            .errorMsg(MqFailedMessageConstant.MQ_FAILED_ASYNC_SEND)
+                            .body("同步商品数据到es失败,失败商品: " + productList)
+                            .retryCount(retryCount)
+                            .build();
+                    mqConsumerFailedMsgService.save(failedMsg);
+                }
+            }
+        });
     }
 
     /**
@@ -154,7 +241,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         String productDetailKey = RedisKeyGenerator.productDetail(Long.valueOf(productId));
         String productCollectionKey = RedisKeyGenerator.productCollection(Long.valueOf(productId));
         Map<String, Object> productDetailMap = RedisConnector.opsForHash().entries(productDetailKey);
-        Set<Object> userIdSet =(Set<Object>)(RedisConnector.opsForValue().get(productCollectionKey));
+        Set<Object> userIdSet = (Set<Object>) (RedisConnector.opsForValue().get(productCollectionKey));
         if (productDetailMap.isEmpty()) {
             Product product = productMapper.selectByProductId(productId, userId);
             //空对象
@@ -367,10 +454,11 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
      * @return
      */
     @Override
-    public Result getCategoryProductList(String categoryId, String beginProductId,String sortType) {
+    public Result getCategoryProductList(String categoryId, String beginProductId, String sortType) {
         String hashKey = RedisKeyGenerator.categoryTreeHashKey(Long.valueOf(categoryId));
         List<Long> secondCategoryIdList = RedisConnector
-                .getHashField(RedisKeyGenerator.categoryTreeKey(), hashKey, new TypeReference<>() {});
+                .getHashField(RedisKeyGenerator.categoryTreeKey(), hashKey, new TypeReference<>() {
+                });
         List<Product> productList;
         //一级分类
         if (!Objects.isNull(secondCategoryIdList)) {
@@ -385,7 +473,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         }
         ProductSortType productSortType = ProductSortType.getByValue(sortType);
         List<SimpleProductVO> simpleProductVOs = productList.stream()
-                .sorted((p1, p2) -> ProductSortType.compare(p1,p2,productSortType))
+                .sorted((p1, p2) -> ProductSortType.compare(p1, p2, productSortType))
                 .map(product -> copyMapper.productToSimpleProductVO(product))
                 .collect(Collectors.toList());
         String endProductId = simpleProductVOs.get(simpleProductVOs.size() - 1).getId().toString();
@@ -411,7 +499,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
     }
 
     private List<Product> getProducts(List<Long> categoryIdList, String beginProductId) {
-        if (categoryIdList.isEmpty()){
+        if (categoryIdList.isEmpty()) {
             return new ArrayList<>(0);
 
         }

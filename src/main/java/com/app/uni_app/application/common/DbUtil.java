@@ -15,6 +15,7 @@ import javax.sql.DataSource;
 
 /**
  * 数据库工具类
+ * 可以独立获取数据库连接 无需启动项目
  */
 public class DbUtil {
 
