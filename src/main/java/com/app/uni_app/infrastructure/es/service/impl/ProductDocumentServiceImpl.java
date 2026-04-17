@@ -3,9 +3,14 @@ package com.app.uni_app.infrastructure.es.service.impl;
 import com.app.uni_app.infrastructure.es.document.ProductDocument;
 import com.app.uni_app.infrastructure.es.repository.ProductEsRepository;
 import com.app.uni_app.infrastructure.es.service.ProductDocumentService;
+import com.app.uni_app.infrastructure.redis.connect.RedisConnector;
+import com.app.uni_app.infrastructure.redis.generator.RedisKeyGenerator;
+import com.app.uni_app.pojo.emums.ProductSortTypeEnum;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -31,10 +36,28 @@ public class ProductDocumentServiceImpl implements ProductDocumentService {
 
     @Override
     public List<ProductDocument> getProductDocumentByIdList(List<Long> idList) {
-        if (Objects.isNull(idList)||idList.isEmpty()){
+        if (Objects.isNull(idList) || idList.isEmpty()) {
             return Collections.emptyList();
         }
-       return productEsRepository.getByIdList(idList);
+        return productEsRepository.getByIdList(idList);
+    }
+
+
+    @Override
+    public List<ProductDocument> getProductDocumentByProductNameKeyword(String productNameKeyword) {
+        if (StringUtils.isBlank(productNameKeyword)) {
+            return Collections.emptyList();
+        }
+        return productEsRepository.searchByName(productNameKeyword);
+    }
+
+    @Override
+    public List<ProductDocument> getProductDocumentByProductNameKeyword(String productNameKeyword, Integer limit) {
+        if (StringUtils.isBlank(productNameKeyword) || Objects.isNull(limit)) {
+            return Collections.emptyList();
+        }
+        return productEsRepository.searchByName(productNameKeyword, limit);
+
     }
 
     @Override
@@ -46,4 +69,32 @@ public class ProductDocumentServiceImpl implements ProductDocumentService {
     public void batchSaveProductDocument(List<ProductDocument> productDocumentList) {
         productEsRepository.batchSave(productDocumentList);
     }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public List<ProductDocument> searchByCursorByCategoryId(Integer limit, ProductSortTypeEnum productSortTypeEnum, String sortValue, Long productId, Long categoryId, Boolean isFirstCategoryId) {
+        if (Objects.isNull(isFirstCategoryId)) {
+            throw new RuntimeException("是否为一级分类id isFirstCategoryId, 传参为 null");
+        }
+        //一级分类查询
+        if (isFirstCategoryId) {
+            String key = RedisKeyGenerator.categoryTreeKey();
+            String hashKey = RedisKeyGenerator.categoryTreeHashKey(categoryId);
+            List<Long> secondCategoryIdList = RedisConnector.getHashField(key, hashKey, ArrayList.class);
+            //首次一级分类查询
+            if (Objects.isNull(sortValue) || Objects.isNull(productId)) {
+                return productEsRepository.searchLimitByProductSortTypeAndCategoryIdList(productSortTypeEnum, secondCategoryIdList, limit);
+            }
+            //一级分类游标查询
+            return productEsRepository.searchCursorByProductSortTypeAndCategoryIdList(productSortTypeEnum, secondCategoryIdList, limit, sortValue, productId);
+        }
+        //首次二级分类查询
+        if (Objects.isNull(sortValue) || Objects.isNull(productId)) {
+            return productEsRepository.searchLimitByProductSortTypeAndCategoryId(productSortTypeEnum, categoryId, limit);
+        }
+        //二级分类游标查询
+        return productEsRepository.searchCursorByProductSortTypeAndCategoryId(productSortTypeEnum, categoryId, limit, sortValue, productId);
+    }
+
+
 }

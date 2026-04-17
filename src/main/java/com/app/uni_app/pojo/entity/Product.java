@@ -4,6 +4,10 @@ import com.app.uni_app.common.constant.DatePatternConstants;
 import com.app.uni_app.pojo.emums.CommonStatus;
 import com.baomidou.mybatisplus.annotation.*;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
+import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import lombok.Data;
 import lombok.experimental.FieldNameConstants;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -125,6 +129,8 @@ public class Product implements Serializable {
     @DateTimeFormat(pattern = DatePatternConstants.DATE_TIME_FORM)
     @JsonFormat(pattern = DatePatternConstants.DATE_TIME_FORM)
     @TableField(value = "create_time", fill = FieldFill.INSERT) // 插入时自动填充
+    @JsonSerialize(using = LocalDateTimeSerializer.class)
+    @JsonDeserialize(using = LocalDateTimeDeserializer.class)
     private LocalDateTime createTime;
 
     /**
@@ -133,6 +139,8 @@ public class Product implements Serializable {
     @DateTimeFormat(pattern = DatePatternConstants.DATE_TIME_FORM)
     @JsonFormat(pattern = DatePatternConstants.DATE_TIME_FORM)
     @TableField(value = "update_time", fill = FieldFill.INSERT_UPDATE) // 插入/更新时自动填充
+    @JsonSerialize(using = LocalDateTimeSerializer.class)
+    @JsonDeserialize(using = LocalDateTimeDeserializer.class)
     private LocalDateTime updateTime;
 
 }

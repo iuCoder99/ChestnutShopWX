@@ -4,9 +4,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -26,12 +26,13 @@ import java.util.Map;
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class JacksonUtils {
 
     private static ObjectMapper objectMapper;
 
-    @Autowired
-    private ObjectMapper springObjectMapper;
+
+    private final ObjectMapper springObjectMapper;
 
     // 将 Spring 管理的 ObjectMapper 注入给静态变量，确保配置一致（如日期格式）
     @PostConstruct

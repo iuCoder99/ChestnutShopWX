@@ -1,4 +1,4 @@
-package com.app.uni_app.aop.aspect;
+package com.app.uni_app.aop.aspect.business;
 
 import com.app.uni_app.common.result.Result;
 import com.app.uni_app.service.CategoryService;
@@ -12,7 +12,7 @@ import java.util.Objects;
 @Aspect
 public class UpdateCategoryTreeRedisCacheAspect {
 
-    @Pointcut(value = "@annotation(com.app.uni_app.aop.annotation.UpdateCategoryTreeRedisCacheAnnotation)")
+    @Pointcut(value = "@annotation(com.app.uni_app.aop.annotation.business.UpdateCategoryTreeRedisCacheAnnotation)")
     private void pointCut() {
     }
 

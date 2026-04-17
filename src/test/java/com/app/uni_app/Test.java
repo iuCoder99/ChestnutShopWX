@@ -2,8 +2,9 @@ package com.app.uni_app;
 
 
 import com.app.uni_app.common.generator.SnowflakeIdGenerator;
+import com.app.uni_app.infrastructure.es.document.ProductDocument;
+import com.app.uni_app.infrastructure.es.repository.ProductEsRepository;
 import com.app.uni_app.infrastructure.redis.connect.RedisConnector;
-import com.app.uni_app.mapper.CartMapper;
 import com.app.uni_app.pojo.entity.Product;
 import com.app.uni_app.pojo.entity.ProductSpec;
 import com.app.uni_app.service.impl.CouponServiceImpl;
@@ -20,10 +21,10 @@ public class Test {
     private final SnowflakeIdGenerator snowflakeIdGenerator = new SnowflakeIdGenerator();
 
     @Resource
-    private CartMapper cartMapper;
+    private CouponServiceImpl couponService;
 
     @Resource
-    private CouponServiceImpl couponService;
+    private ProductEsRepository productEsRepository;
 
     @org.junit.jupiter.api.Test
     void test1() {
@@ -96,4 +97,27 @@ public class Test {
     public void test4() {
         couponService.updateCouponRedisCache();
     }
+
+    @org.junit.jupiter.api.Test
+    public void testEsRepository(){
+        ProductDocument one = productEsRepository.getById(1L);
+        System.out.println("单个查询数据:"+one.toString());
+
+        ProductDocument oneNotHave = productEsRepository.getById(0L);
+        System.out.println("查询不存在的数据" + oneNotHave);
+        List<ProductDocument> two = productEsRepository.getById(1L, 2L);
+        System.out.println("定参数批量查询"+two.get(0).toString()+two.get(1).toString());
+
+        List<ProductDocument> isOne = productEsRepository.getById(0L, 1L);
+        System.out.println("查询数两个,实际存在一个,测试查询"+isOne.size());
+
+        List<Long> list = List.of(2L, 3L, 4L);
+        List<ProductDocument> queryList = productEsRepository.getByIdList(list);
+        System.out.println("列表 id 查询 查询出数量+"+ queryList.size()+";期望数量3");
+        UniAppApplicationTests uniAppApplicationTests = new UniAppApplicationTests();
+        uniAppApplicationTests.testParamCheck(null,null,null);
+
+    }
+
+
 }

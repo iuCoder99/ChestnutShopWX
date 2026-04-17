@@ -1,4 +1,4 @@
-package com.app.uni_app.aop.aspect;
+package com.app.uni_app.aop.aspect.business;
 
 
 import com.app.uni_app.common.result.Result;
@@ -15,7 +15,7 @@ import java.util.Objects;
 @Aspect
 @Component
 public class RemoveOrderDetailRedisCacheAspect {
-    @Pointcut("@annotation(com.app.uni_app.aop.annotation.RemoveOrderDetailRedisCacheAnnotation)")
+    @Pointcut("@annotation(com.app.uni_app.aop.annotation.business.RemoveOrderDetailRedisCacheAnnotation)")
     public void pointCut() {
     }
 

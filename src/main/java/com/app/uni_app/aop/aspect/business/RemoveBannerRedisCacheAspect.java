@@ -1,4 +1,4 @@
-package com.app.uni_app.aop.aspect;
+package com.app.uni_app.aop.aspect.business;
 
 
 import com.app.uni_app.common.result.Result;
@@ -15,7 +15,7 @@ import java.util.Objects;
 @Component
 public class RemoveBannerRedisCacheAspect {
 
-    @Pointcut(value = "@annotation(com.app.uni_app.aop.annotation.RemoveBannerRedisCacheAnnotation)")
+    @Pointcut(value = "@annotation(com.app.uni_app.aop.annotation.business.RemoveBannerRedisCacheAnnotation)")
     public void pointcut(){}
 
     @AfterReturning(pointcut = "pointcut()" ,returning = "result")

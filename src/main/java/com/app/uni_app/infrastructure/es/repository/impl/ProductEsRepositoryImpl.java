@@ -1,15 +1,24 @@
 package com.app.uni_app.infrastructure.es.repository.impl;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.GetResponse;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
+import com.app.uni_app.aop.annotation.common.ParamCheckAnnotation;
 import com.app.uni_app.infrastructure.es.document.ProductDocument;
 import com.app.uni_app.infrastructure.es.index.EsIndexEnum;
 import com.app.uni_app.infrastructure.es.repository.ProductEsRepository;
+import com.app.uni_app.pojo.emums.CommonSortTypeEnum;
+import com.app.uni_app.pojo.emums.CommonStatus;
+import com.app.uni_app.pojo.emums.ProductSortTypeEnum;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -24,14 +33,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ProductEsRepositoryImpl implements ProductEsRepository {
 
-
     private final ElasticsearchClient esClient;
-
-    /**
-     * ES 索引名称
-     */
+    private static final Logger log = LoggerFactory.getLogger(ProductEsRepositoryImpl.class);
     private static final String PRODUCT_INDEX = EsIndexEnum.PRODUCT.getIndexName();
-
 
     @Override
     public ProductDocument getById(Long id) {
@@ -43,7 +47,7 @@ public class ProductEsRepositoryImpl implements ProductEsRepository {
             );
             return response.source();
         } catch (IOException e) {
-            throw new RuntimeException("ES 查询ID{"+id+"}的商品数据,查询失败", e);
+            throw new RuntimeException("ES 查询ID{" + id + "}的商品数据,查询失败", e);
         }
     }
 
@@ -54,7 +58,6 @@ public class ProductEsRepositoryImpl implements ProductEsRepository {
         return getByIdList(idList);
     }
 
-
     @Override
     public List<ProductDocument> getByIdList(List<Long> idList) {
         if (CollectionUtils.isEmpty(idList)) {
@@ -62,16 +65,12 @@ public class ProductEsRepositoryImpl implements ProductEsRepository {
         }
 
         try {
-            // 构建 ID 查询
             Query query = Query.of(q -> q.ids(i -> i.values(idList.stream().map(String::valueOf).collect(Collectors.toList()))));
-
             SearchResponse<ProductDocument> response = esClient.search(s -> s
                             .index(PRODUCT_INDEX)
                             .query(query),
                     ProductDocument.class
             );
-
-            // 提取结果
             return response.hits().hits().stream()
                     .map(Hit::source)
                     .collect(Collectors.toList());
@@ -143,9 +142,15 @@ public class ProductEsRepositoryImpl implements ProductEsRepository {
             return List.of();
         }
         try {
-            Query query = Query.of(q -> q.match(m -> m
-                    .field("name")
-                    .query(name)
+            Query query = Query.of(q -> q.bool(b -> b
+                    .must(m -> m.match(mt -> mt
+                            .field(ProductDocument.Fields.name)
+                            .query(name)
+                    ))
+                    .filter(f -> f.term(t -> t
+                            .field(ProductDocument.Fields.status)
+                            .value(1)
+                    ))
             ));
 
             SearchResponse<ProductDocument> response = esClient.search(s -> s
@@ -159,6 +164,185 @@ public class ProductEsRepositoryImpl implements ProductEsRepository {
                     .collect(Collectors.toList());
         } catch (IOException e) {
             throw new RuntimeException("ES 按名称搜索商品失败", e);
+        }
+    }
+
+    @Override
+    public List<ProductDocument> searchByName(String name, Integer limit) {
+        if (!StringUtils.hasText(name)) {
+            return List.of();
+        }
+        if (limit == null || limit <= 0) {
+            throw new RuntimeException("es 根据名称搜索商品 , limit参数不合法: " + limit);
+        }
+        try {
+            SearchResponse<ProductDocument> response = esClient.search(s -> s
+                            .index(PRODUCT_INDEX)
+                            .size(limit)
+                            .query(q -> q.bool(b -> b
+                                    .must(m -> m.match(mt -> mt
+                                            .field(ProductDocument.Fields.name)
+                                            .query(name)
+                                    ))
+                                    .filter(f -> f.term(t -> t
+                                            .field(ProductDocument.Fields.status)
+                                            .value(1)
+                                    ))
+                            )),
+                    ProductDocument.class
+            );
+
+            return response.hits().hits().stream()
+                    .map(Hit::source)
+                    .collect(Collectors.toList());
+        } catch (IOException e) {
+            throw new RuntimeException("ES 按名称搜索商品失败", e);
+        }
+    }
+
+    @Override
+    @ParamCheckAnnotation
+    public List<ProductDocument> searchLimitByProductSortTypeAndCategoryId(ProductSortTypeEnum productSortTypeEnum, Long categoryId, Integer limit) {
+        String sortField = productSortTypeEnum.getSortField();
+        CommonSortTypeEnum commonSortTypeEnum = productSortTypeEnum.getCommonSortTypeEnum();
+        SortOrder sortOrder =commonSortTypeEnum.isAsc() ? SortOrder.Asc : SortOrder.Desc;
+        SearchRequest.Builder request = new SearchRequest.Builder();
+        SearchRequest searchRequest = request.index(EsIndexEnum.PRODUCT.getIndexName())
+                .sort(s -> s.field(f -> f.field(sortField).order(sortOrder)))
+                .sort(s -> s.field(f -> f.field(ProductDocument.Fields.id).order(SortOrder.Asc)))
+                .query(q -> q.bool(b -> b
+                        .filter(f -> f.term(t -> t.field(ProductDocument.Fields.categoryId).value(categoryId)))
+                        .filter(f -> f.term(t -> t.field(ProductDocument.Fields.status).value(CommonStatus.ACTIVE.getNumber())))
+                ))
+                .size(limit)
+                .build();
+        try {
+            SearchResponse<ProductDocument> searchResponse = esClient.search(searchRequest, ProductDocument.class);
+            return searchResponse.hits().hits().stream()
+                    .map(Hit::source)
+                    .collect(Collectors.toList());
+        } catch (IOException e) {
+            throw new RuntimeException("es 首次游标 limit 查询失败");
+        }
+
+    }
+
+    @Override
+    public List<ProductDocument> searchCursorByProductSortTypeAndCategoryId(ProductSortTypeEnum productSortTypeEnum, Long categoryId, Integer limit, String sortValue, Long productId) {
+        String sortField = productSortTypeEnum.getSortField();
+        CommonSortTypeEnum commonSortTypeEnum = productSortTypeEnum.getCommonSortTypeEnum();
+        SortOrder sortOrder =commonSortTypeEnum.isAsc() ? SortOrder.Asc : SortOrder.Desc;
+        SearchRequest.Builder request = new SearchRequest.Builder();
+        SearchRequest searchRequest = request.index(EsIndexEnum.PRODUCT.getIndexName())
+                .sort(s -> s.field(f -> f.field(sortField).order(sortOrder)))
+                .sort(s -> s.field(f -> f.field(ProductDocument.Fields.id).order(SortOrder.Asc)))
+                .query(q -> q.bool(b -> b
+                        .filter(f -> f.term(t -> t.field(ProductDocument.Fields.categoryId).value(categoryId)))
+                        .filter(f -> f.term(t -> t.field(ProductDocument.Fields.status).value(CommonStatus.ACTIVE.getNumber())))
+                ))
+                .searchAfter(Arrays.asList(
+                        FieldValue.of(sortValue),
+                        FieldValue.of(productId)
+                ))
+                .size(limit)
+                .build();
+        try {
+            SearchResponse<ProductDocument> searchResponse = esClient.search(searchRequest, ProductDocument.class);
+            return searchResponse.hits().hits().stream()
+                    .map(Hit::source)
+                    .collect(Collectors.toList());
+        } catch (IOException e) {
+            throw new RuntimeException("es 游标 limit 查询失败");
+        }
+    }
+
+    @Override
+    @ParamCheckAnnotation
+    public List<ProductDocument> searchLimitByProductSortTypeAndCategoryIdList(
+            ProductSortTypeEnum productSortTypeEnum,
+            List<Long> categoryIdList,
+            Integer limit
+    ) {
+        String sortField = productSortTypeEnum.getSortField();
+        CommonSortTypeEnum commonSortTypeEnum = productSortTypeEnum.getCommonSortTypeEnum();
+        SortOrder sortOrder = commonSortTypeEnum.isAsc() ? SortOrder.Asc : SortOrder.Desc;
+
+        SearchRequest searchRequest = new SearchRequest.Builder()
+                .index(EsIndexEnum.PRODUCT.getIndexName())
+                .sort(s -> s.field(f -> f.field(sortField).order(sortOrder)))
+                .sort(s -> s.field(f -> f.field(ProductDocument.Fields.id).order(SortOrder.Asc)))
+                .query(q -> q.bool(b -> b
+                        .must(m -> m.terms(t -> t
+                                .field(ProductDocument.Fields.categoryId)
+                                .terms(f -> f.value(
+                                        categoryIdList.stream()
+                                                .map(FieldValue::of)
+                                                .toList()
+                                ))
+                        ))
+                        .must(m -> m.term(t -> t
+                                .field(ProductDocument.Fields.status)
+                                .value(CommonStatus.ACTIVE.getNumber())
+                        ))
+                ))
+                .size(limit)
+                .build();
+
+        try {
+            SearchResponse<ProductDocument> searchResponse = esClient.search(searchRequest, ProductDocument.class);
+            return searchResponse.hits().hits().stream()
+                    .map(Hit::source)
+                    .collect(Collectors.toList());
+        } catch (IOException e) {
+            throw new RuntimeException("es 首次游标 limit 查询失败");
+        }
+    }
+
+    @Override
+    @ParamCheckAnnotation
+    public List<ProductDocument> searchCursorByProductSortTypeAndCategoryIdList(
+            ProductSortTypeEnum productSortTypeEnum,
+            List<Long> categoryIdList,
+            Integer limit,
+            String sortValue,
+            Long productId
+    ) {
+        String sortField = productSortTypeEnum.getSortField();
+        CommonSortTypeEnum commonSortTypeEnum = productSortTypeEnum.getCommonSortTypeEnum();
+        SortOrder sortOrder = commonSortTypeEnum.isAsc() ? SortOrder.Asc : SortOrder.Desc;
+
+        SearchRequest searchRequest = new SearchRequest.Builder()
+                .index(EsIndexEnum.PRODUCT.getIndexName())
+                .sort(s -> s.field(f -> f.field(sortField).order(sortOrder)))
+                .sort(s -> s.field(f -> f.field(ProductDocument.Fields.id).order(SortOrder.Asc)))
+                .query(q -> q.bool(b -> b
+                        .must(m -> m.terms(t -> t
+                                .field(ProductDocument.Fields.categoryId)
+                                .terms(f -> f.value(
+                                        categoryIdList.stream()
+                                                .map(FieldValue::of)
+                                                .toList()
+                                ))
+                        ))
+                        .must(m -> m.term(t -> t
+                                .field(ProductDocument.Fields.status)
+                                .value(CommonStatus.ACTIVE.getNumber())
+                        ))
+                ))
+                .searchAfter(Arrays.asList(
+                        FieldValue.of(sortValue),
+                        FieldValue.of(productId)
+                ))
+                .size(limit)
+                .build();
+
+        try {
+            SearchResponse<ProductDocument> searchResponse = esClient.search(searchRequest, ProductDocument.class);
+            return searchResponse.hits().hits().stream()
+                    .map(Hit::source)
+                    .collect(Collectors.toList());
+        } catch (IOException e) {
+            throw new RuntimeException("es 游标 limit 查询失败");
         }
     }
 }

@@ -1,7 +1,7 @@
 package com.app.uni_app.service.impl;
 
 
-import com.app.uni_app.aop.annotation.UpdateCategoryTreeRedisCacheAnnotation;
+import com.app.uni_app.aop.annotation.business.UpdateCategoryTreeRedisCacheAnnotation;
 import com.app.uni_app.common.constant.DataConstant;
 import com.app.uni_app.common.constant.MessageConstant;
 import com.app.uni_app.common.mapstruct.CopyMapper;

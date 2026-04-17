@@ -1,4 +1,4 @@
-package com.app.uni_app.aop.aspect;
+package com.app.uni_app.aop.aspect.business;
 
 
 import com.app.uni_app.common.result.Result;
@@ -18,7 +18,7 @@ public class RemoveOrderSessionAspect {
     @Resource
     private SessionUtils sessionUtils;
 
-    @Pointcut(value = "@annotation(com.app.uni_app.aop.annotation.RemoveOrderSessionAnnotation)")
+    @Pointcut(value = "@annotation(com.app.uni_app.aop.annotation.business.RemoveOrderSessionAnnotation)")
     public void pointcut() {
     }
 

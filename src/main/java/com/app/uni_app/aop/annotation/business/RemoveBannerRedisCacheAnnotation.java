@@ -1,11 +1,11 @@
-package com.app.uni_app.aop.annotation;
+package com.app.uni_app.aop.annotation.business;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-@Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-public @interface RemoveProductCollectionRedisCacheAnnotation {
+@Retention(RetentionPolicy.RUNTIME)
+public @interface RemoveBannerRedisCacheAnnotation {
 }

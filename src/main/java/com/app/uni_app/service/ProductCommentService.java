@@ -27,4 +27,5 @@ public interface ProductCommentService {
     Result<?> getProductCommentCount(@NotBlank String productId);
 
     Result<?> updateProductCommentLike(@NotBlank String productCommentId, @NotNull Integer isLike ,@NotNull Integer isFirstComment);
+
 }

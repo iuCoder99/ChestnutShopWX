@@ -1,12 +1,15 @@
 package com.app.uni_app.controller.user;
 
 import com.app.uni_app.common.result.Result;
+import com.app.uni_app.common.result.SimpleCursorCommonEntity;
+import com.app.uni_app.common.result.SimpleCursorCommonResult;
 import com.app.uni_app.pojo.dto.UserDetailDTO;
 import com.app.uni_app.service.CollectionService;
 import com.app.uni_app.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.web.bind.annotation.*;
@@ -70,15 +73,14 @@ public class UserController {
     }
 
     /**
-     * 获取收藏列表
-     * @param pageNum
-     * @param pageSize
-     * @return
+     * 获取用户收藏商品列表
+     * @param simpleCursorCommonEntity 简单查询请求参数
+     * @return 简单商品封装列表
      */
     @GetMapping("/collect/list")
     @Operation(summary = "查询收藏列表", description = "分页获取当前登录用户的商品收藏列表，默认页码1、每页10条")
-    public Result getCollectionList(@RequestParam(defaultValue = "1") Integer pageNum, @RequestParam(defaultValue = "10") Integer pageSize) {
-        return collectionService.getCollectionList(pageNum, pageSize);
+    public Result<SimpleCursorCommonResult>getCollectionList(@Valid SimpleCursorCommonEntity simpleCursorCommonEntity) {
+        return collectionService.getCollectionList(simpleCursorCommonEntity);
     }
 
 

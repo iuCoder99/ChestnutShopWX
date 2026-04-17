@@ -5,12 +5,11 @@ import com.app.uni_app.common.constant.CaffeineConstant;
 import com.app.uni_app.common.constant.DataConstant;
 import com.app.uni_app.common.constant.MessageConstant;
 import com.app.uni_app.common.mapstruct.CopyMapper;
+import com.app.uni_app.common.result.CursorCommonEntity;
+import com.app.uni_app.common.result.CursorCommonResult;
 import com.app.uni_app.common.result.PageResult;
 import com.app.uni_app.common.result.Result;
-import com.app.uni_app.common.util.BloomFilterUtils;
-import com.app.uni_app.common.util.CaffeineUtils;
-import com.app.uni_app.common.util.JacksonUtils;
-import com.app.uni_app.common.util.SessionUtils;
+import com.app.uni_app.common.util.*;
 import com.app.uni_app.infrastructure.es.common.mapstruct.EsCopyMapper;
 import com.app.uni_app.infrastructure.es.document.ProductDocument;
 import com.app.uni_app.infrastructure.es.service.ProductDocumentService;
@@ -22,7 +21,7 @@ import com.app.uni_app.infrastructure.rocketmq.constant.failed.MqFailedMessageCo
 import com.app.uni_app.infrastructure.rocketmq.constant.product.MqProductConstant;
 import com.app.uni_app.mapper.ProductMapper;
 import com.app.uni_app.pojo.emums.CommonStatus;
-import com.app.uni_app.pojo.emums.ProductSortType;
+import com.app.uni_app.pojo.emums.ProductSortTypeEnum;
 import com.app.uni_app.pojo.entity.MqConsumerFailedMsg;
 import com.app.uni_app.pojo.entity.Product;
 import com.app.uni_app.pojo.entity.ProductCollection;
@@ -54,11 +53,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-/**
- * @author 20589
- * @description 针对表【product(商品表)】的数据库操作Service实现
- * @createDate 2025-12-23 19:32:49
- */
+
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -100,16 +95,15 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
     private static final String PRODUCT_LIST = "productList";
     private static final String END_PRODUCT_ID = "endProductId";
 
-    private static final SimpleProductVO emptySimpleProductVO = SimpleProductVO.builder().id(DataConstant.ZERO_LONG).build();
 
     /**
      * 获取热门商品
      * 按照销量进行排名
-     *
-     * @return
+     * @param limit 展示数量
+     * @return 返回商品实体类
      */
     @Override
-    public Result getHotProduct(Integer limit) {
+    public Result<?> getHotProduct(Integer limit) {
         String hotProductKey = RedisKeyGenerator.hotProductKey();
         Map<String, Object> hotProductMap = RedisConnector.opsForHash().entries(hotProductKey);
         List<Product> hotProducts;
@@ -146,9 +140,9 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
      * @return 简单商品列表
      */
     @Override
-    public Result<?> getBriefProduct(String productIds) {
+    public Result<List<SimpleProductVO>> getBriefProduct(String productIds) {
         if (StringUtils.isBlank(productIds)) {
-            return Result.success(CollectionUtils.emptyCollection());
+            return Result.success(new ArrayList<>(0));
         }
         List<Long> productIdList = Arrays.stream(StringUtils.split(productIds, ",")).map(Long::valueOf).toList();
         Map<Long, SimpleProductVO> resultMap = new HashMap<>(productIdList.size());
@@ -167,7 +161,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
             }
             return Result.success(resultList);
         }
-        ArrayList<Long> needQueryBySQLIdList = new ArrayList<>();
+        List<Long> needQueryBySQLIdList = new ArrayList<>();
         resultMap.forEach((key, value) -> {
             if (Objects.isNull(value)) {
                 needQueryBySQLIdList.add(key);
@@ -220,15 +214,16 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         });
     }
 
+
     /**
      * 获取商品详情
-     *
-     * @param productId
-     * @return
+     * @param productId 商品 id
+     * @param userId 用户 id ,如果用户未登录 ,这里是 null
+     * @return 商品实体类
      */
     @Override
     @SuppressWarnings("unchecked")
-    public Result getProductDetail(String productId, String userId) {
+    public Result<?> getProductDetail(String productId, String userId) {
         if (StringUtils.isBlank(productId)) {
             return Result.error(MessageConstant.TOM_CAT_ERROR);
         }
@@ -354,11 +349,54 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
      * @return
      */
     @Override
-    public Result getProductList(Integer pageNum, Integer pageSize, String categoryId) {
+    public Result<?> getProductList(Integer pageNum, Integer pageSize, String categoryId) {
         IPage<Product> page = productMapper.selectByCategoryIdPage(new Page<>(pageNum, pageSize), categoryId);
         PageResult pageResult = PageResult.builder().list(page.getRecords()).total(page.getTotal())
                 .pageNum(pageNum).pageSize(pageSize).build();
         return Result.success(pageResult);
+    }
+
+
+    /**
+     * 游标查询指定分类下的简单商品列表, 通过 es 进行查询
+     * @param cursorCommonEntity 游标参数实体
+     * @return 游标返回实体
+     */
+    @Override
+    public CursorCommonResult getCategorySimpleProduct(CursorCommonEntity cursorCommonEntity, Long categoryId, boolean isFirstCategoryId) {
+        String sortType = cursorCommonEntity.getSortType();
+        Long sortId = cursorCommonEntity.getSortId();
+        String sortValue = cursorCommonEntity.getSortValue();
+        ProductSortTypeEnum productSortTypeEnum = ProductSortTypeEnum.getByValue(sortType);
+        sortValue = ProductSortTypeEnum.filterFormatSortValue(productSortTypeEnum, sortValue);
+        Integer querySize = cursorCommonEntity.getQuerySize();
+        List<ProductDocument> productDocuments = productDocumentService.searchByCursorByCategoryId(
+                querySize, productSortTypeEnum, sortValue, sortId, categoryId, isFirstCategoryId);
+        boolean isEnd = false;
+        if (productDocuments.isEmpty()) {
+            return CursorCommonResult.builder()
+                    .isEnd(true)
+                    .list(Collections.emptyList())
+                    .build();
+        }
+        if (querySize > productDocuments.size()) {
+            isEnd = true;
+        }
+        ProductDocument productDocument = productDocuments.get(productDocuments.size() - 1);
+        String sortValueByProductDocument = ProductSortTypeEnum.getSortValueByProductDocument(productSortTypeEnum, productDocument);
+        CursorCommonEntity cursorCommonEntityResult = CursorCommonEntity.builder()
+                .sortType(sortType)
+                .querySize(querySize)
+                .sortId(productDocument.getId())
+                .sortValue(sortValueByProductDocument)
+                .build();
+        List<SimpleProductVO> simpleProductVOS = productDocuments.stream().map(esCopyMapper::ProductDocumentToSimpleProductVO).toList();
+        return CursorCommonResult.builder()
+                .isEnd(isEnd)
+                .list(simpleProductVOS)
+                .cursorCommonEntity(cursorCommonEntityResult)
+                .build();
+
     }
 
     /**
@@ -373,8 +411,8 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
      * @return
      */
     @Override
-    public Result searchProductList(Integer pageNum, Integer pageSize, String firstCategoryId, String secondCategoryId, String sortType, String keyword) {
-        String productSortType = ProductSortType.getByValue(sortType).getDbValue();
+    public Result<?> searchProductList(Integer pageNum, Integer pageSize, String firstCategoryId, String secondCategoryId, String sortType, String keyword) {
+        String productSortType = ProductSortTypeEnum.getByValue(sortType).getDbValue();
         Page<Product> page = new Page<>(pageNum, pageSize);
         Page<Product> pageResultBox;
         if (StringUtils.isBlank(firstCategoryId) && StringUtils.isBlank(secondCategoryId)) {
@@ -395,14 +433,23 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
     }
 
     /**
-     * 获取相关商品(通过categoryId建立联系)
-     *
-     * @return
+     * 基于商品名字, 进行es查询
+     * @param productName 商品名字
+     * @param limit 查询数
+     * @return 返回商品文档列表
      */
     @Override
-    public Result getProductRelated(String productId, Integer limit) {
-        List<Product> products = productMapper.selectRelatedByCategoryId(productId, limit);
-        return Result.success(products);
+    public List<ProductDocument> getProductRelated(String productName, Integer limit) {
+        List<ProductDocument> allMatchProductDocument = productDocumentService.getProductDocumentByProductNameKeyword(productName, limit + 1);
+        for (ProductDocument productDocument : allMatchProductDocument) {
+            if (productDocument.getName().equals(productName)) {
+                allMatchProductDocument.remove(productDocument);
+                break;
+            }
+        }
+        return allMatchProductDocument;
+
+
     }
 
     /**
@@ -413,7 +460,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
      * @return
      */
     @Override
-    public Result getProductSpecPrice(String productId, String specId) {
+    public Result<?> getProductSpecPrice(String productId, String specId) {
         if (!bloomFilterUtils.contains(Long.valueOf(productId))) {
             return null;
         }
@@ -471,10 +518,10 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         if (CollectionUtils.isEmpty(productList)) {
             return Result.success(CollectionUtils.emptyCollection());
         }
-        ProductSortType productSortType = ProductSortType.getByValue(sortType);
+        ProductSortTypeEnum productSortTypeEnum = ProductSortTypeEnum.getByValue(sortType);
         List<SimpleProductVO> simpleProductVOs = productList.stream()
-                .sorted((p1, p2) -> ProductSortType.compare(p1, p2, productSortType))
-                .map(product -> copyMapper.productToSimpleProductVO(product))
+                .sorted((p1, p2) -> ProductSortTypeEnum.compare(p1, p2, productSortTypeEnum))
+                .map(copyMapper::productToSimpleProductVO)
                 .collect(Collectors.toList());
         String endProductId = simpleProductVOs.get(simpleProductVOs.size() - 1).getId().toString();
         HashMap<String, Object> resultMap = new HashMap<>(2);
@@ -546,7 +593,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         loadedIdSet.addAll(queryProductIds);
         sessionUtils.setLoadedIdSet(loadedIdSet);
         sessionUtils.setScrollLoadedEndId(scrollLoadedEndId);
-        List<SimpleProductVO> simpleProductVOS = productList.stream().map(product -> copyMapper.productToSimpleProductVO(product)).collect(Collectors.toList());
+        List<SimpleProductVO> simpleProductVOS = productList.stream().map(copyMapper::productToSimpleProductVO).collect(Collectors.toList());
         Collections.shuffle(simpleProductVOS);
         if (scrollLoadedEndId.equals(minProductIdInDataOrDefault)) {
             sessionUtils.removeLoadedIdSet();

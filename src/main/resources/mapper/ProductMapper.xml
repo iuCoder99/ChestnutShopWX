@@ -71,14 +71,6 @@
         </if>
     </select>
 
-    <select id="selectRelatedByCategoryId" resultMap="ProductWithImageAndSpecResultMap">
-        <include refid="selectAllProductWithImageAndSpec_Join_SQL"/>
-        inner join product pOne on p.category_id= pOne.category_id
-        where pOne.id = #{productId}
-        and p.id != #{productId}
-        and p.status = 1
-        limit #{limit}
-    </select>
 
 
     <select id="selectByProductId" resultMap="ProductWithImageAndSpecResultMap">

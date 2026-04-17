@@ -1,20 +1,24 @@
 package com.app.uni_app.controller.admin;
 
 import com.app.uni_app.common.result.CursorCommonEntity;
+import com.app.uni_app.common.result.CursorCommonResult;
 import com.app.uni_app.common.result.Result;
+import com.app.uni_app.infrastructure.es.common.mapstruct.EsCopyMapper;
+import com.app.uni_app.infrastructure.es.document.ProductDocument;
 import com.app.uni_app.pojo.dto.AppendProductFirstCommentDTO;
 import com.app.uni_app.pojo.dto.FirstProductCommentDTO;
 import com.app.uni_app.pojo.dto.SecondProductCommentDTO;
 import com.app.uni_app.pojo.entity.ProductSearchKeyword;
+import com.app.uni_app.pojo.vo.SimpleProductVO;
 import com.app.uni_app.service.ProductCommentService;
 import com.app.uni_app.service.ProductSearchKeywordService;
 import com.app.uni_app.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,15 +28,19 @@ import java.util.List;
 @RestController
 @RequestMapping("/api")
 @Tag(name = "商品管理")
+@RequiredArgsConstructor
 public class ProductController {
-    @Resource
-    private ProductService productService;
 
-    @Resource
-    private ProductSearchKeywordService productSearchKeywordService;
+    private final ProductService productService;
 
-    @Resource
-    private ProductCommentService productCommentService;
+
+    private final ProductSearchKeywordService productSearchKeywordService;
+
+
+    private final ProductCommentService productCommentService;
+
+    private final EsCopyMapper esCopyMapper;
+
 
     /**
      * 获取热门商品
@@ -53,7 +61,7 @@ public class ProductController {
      */
     @GetMapping("/product/brief/list")
     @Operation(summary = "查询商品简单信息列表", description = "根据商品ID（支持批量，逗号分隔，为空则返回空）获取商品简要信息")
-    public Result<?> getBriefProduct(@RequestParam(value = "productIds", defaultValue = "") String productIds) {
+    public Result<List<SimpleProductVO>> getBriefProduct(@RequestParam(value = "productIds", defaultValue = "") String productIds) {
         return productService.getBriefProduct(productIds);
     }
 
@@ -82,6 +90,15 @@ public class ProductController {
         return productService.getProductList(pageNum, pageSize, categoryId);
     }
 
+
+    @GetMapping("/product/categroy/list")
+    @Operation(summary = "查询分类下的商品列表", description = "分类游标查询指定分类下的简单商品列表")
+    public Result<CursorCommonResult> getCategorySimpleProduct(@Valid CursorCommonEntity cursorCommonEntity
+            , Long categoryId, boolean isFirstCategoryId) {
+        CursorCommonResult cursorCommonResult = productService.getCategorySimpleProduct(cursorCommonEntity, categoryId,isFirstCategoryId);
+        return Result.success(cursorCommonResult);
+    }
+
     /**
      * 搜索商品列表
      *
@@ -102,17 +119,18 @@ public class ProductController {
     }
 
     /**
-     * 获取相关商品(通过categoryId建立联系)
-     *
-     * @param productId
-     * @param limit
-     * @return
+     * 获取相关商品
+     * @param productName 商品名
+     * @param limit 查询数 默认 10
+     * @return 简单商品列表
      */
     @GetMapping("/product/related")
     @Operation(summary = "查询相关商品", description = "根据商品ID关联分类，获取相关商品列表，默认最多返回10条，可通过limit参数指定数量")
-    public Result<?> getProductRelated(@RequestParam("productId") String productId
+    public Result<List<SimpleProductVO>> getProductRelated(@RequestParam("productName") String productName
             , @RequestParam(value = "limit", defaultValue = "10") Integer limit) {
-        return productService.getProductRelated(productId, limit);
+        List<ProductDocument> productRelated = productService.getProductRelated(productName, limit);
+        List<SimpleProductVO> simpleProductVOS = productRelated.stream().map(esCopyMapper::ProductDocumentToSimpleProductVO).toList();
+        return Result.success(simpleProductVOS);
     }
 
     /**

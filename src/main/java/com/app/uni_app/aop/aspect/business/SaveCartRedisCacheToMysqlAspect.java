@@ -1,4 +1,4 @@
-package com.app.uni_app.aop.aspect;
+package com.app.uni_app.aop.aspect.business;
 
 import com.app.uni_app.common.context.BaseContext;
 import com.app.uni_app.common.result.Result;
@@ -22,7 +22,7 @@ public class SaveCartRedisCacheToMysqlAspect {
     private SaveCartRedisCacheDelayJob saveCartRedisCacheDelayJob;
 
 
-    @Pointcut(value = "@annotation(com.app.uni_app.aop.annotation.SaveCartRedisCacheToMysqlAnnotation)")
+    @Pointcut(value = "@annotation(com.app.uni_app.aop.annotation.business.SaveCartRedisCacheToMysqlAnnotation)")
     public void pointCut() {
     }
 
