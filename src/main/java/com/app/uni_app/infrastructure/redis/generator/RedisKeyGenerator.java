@@ -1,6 +1,6 @@
 package com.app.uni_app.infrastructure.redis.generator;
 
-import com.app.uni_app.infrastructure.redis.constant.RedisConstant;
+import com.app.uni_app.infrastructure.redis.constant.key.RedisConstant;
 import com.app.uni_app.pojo.emums.CouponUseStatusEnum;
 
 /**
@@ -86,6 +86,16 @@ public class RedisKeyGenerator {
     public static String productCollection(Long productId) {
         return RedisConstant.PREFIX_PRODUCT + RedisConstant.COLLECTION + productId;
 
+    }
+
+
+    /**
+     * es最大商品id缓存
+     * product: + maxProductId
+     * @return value key
+     */
+    public static String maxProductId(){
+        return RedisConstant.PREFIX_PRODUCT + RedisConstant.MAX_PRODUCT_ID;
     }
 
     /**

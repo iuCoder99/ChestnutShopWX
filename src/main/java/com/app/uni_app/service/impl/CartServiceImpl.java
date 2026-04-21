@@ -8,7 +8,7 @@ import com.app.uni_app.common.mapstruct.CopyMapper;
 import com.app.uni_app.common.result.Result;
 import com.app.uni_app.infrastructure.redis.connect.RedisConnector;
 import com.app.uni_app.infrastructure.redis.generator.RedisKeyGenerator;
-import com.app.uni_app.infrastructure.redis.properties.RedisKeyTtlProperties;
+import com.app.uni_app.infrastructure.redis.properties.RedisCacheTtlProperties;
 import com.app.uni_app.mapper.CartMapper;
 import com.app.uni_app.pojo.dto.CartDTO;
 import com.app.uni_app.pojo.dto.CartProductDTO;
@@ -45,7 +45,7 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, Cart> implements Ca
     private ProductService productService;
 
     @Resource
-    private RedisKeyTtlProperties redisKeyTtlProperties;
+    private RedisCacheTtlProperties redisKeyTtlProperties;
 
     private static final String DELETE_IDS = "deletedIds";
     private static final String SUCCESS_COUNT = "successCount";

@@ -15,7 +15,7 @@ import com.app.uni_app.infrastructure.redis.connect.RedisConnector;
 import com.app.uni_app.infrastructure.redis.connect.StringRedisConnector;
 import com.app.uni_app.infrastructure.redis.generator.RedisKeyGenerator;
 import com.app.uni_app.infrastructure.redis.generator.RedisMessageGenerator;
-import com.app.uni_app.infrastructure.redis.properties.RedisKeyTtlProperties;
+import com.app.uni_app.infrastructure.redis.properties.RedisCacheTtlProperties;
 import com.app.uni_app.infrastructure.rocketmq.constant.order.MqOrderConstant;
 import com.app.uni_app.infrastructure.rocketmq.consumer.order.OrderStatusConsumer;
 import com.app.uni_app.mapper.ProductCommentAppendMapper;
@@ -64,7 +64,7 @@ public class ProductCommentServiceImpl extends ServiceImpl<ProductCommentMapper,
 
     private final ProductCommentLikeMapper productCommentLikeMapper;
 
-    private final RedisKeyTtlProperties redisKeyTtlProperties;
+    private final RedisCacheTtlProperties redisCacheTtlProperties;
 
     private final MyBatisBatchExecutor myBatisBatchExecutor;
 
@@ -180,7 +180,7 @@ public class ProductCommentServiceImpl extends ServiceImpl<ProductCommentMapper,
                 throw new EmptyObjectException(MessageConstant.DATA_ERROR);
             }
             RedisConnector.setHashObject(firstCommentKey, firstProductComment);
-            RedisConnector.expire(firstCommentKey, redisKeyTtlProperties.getProductFirstCommentTtl(), TimeUnit.SECONDS);
+            RedisConnector.expire(firstCommentKey, redisCacheTtlProperties.getProductFirstCommentTtl(), TimeUnit.SECONDS);
 
         }
         return firstProductComment;
@@ -381,11 +381,11 @@ public class ProductCommentServiceImpl extends ServiceImpl<ProductCommentMapper,
                     );
             if (Objects.isNull(productCommentAppendSelectOne)) {
                 RedisConnector.setHashObject(appendCommentKey, emptyProductCommentAppend);
-                RedisConnector.expire(appendCommentKey, redisKeyTtlProperties.getProductAppendCommentTtl(), TimeUnit.SECONDS);
+                RedisConnector.expire(appendCommentKey, redisCacheTtlProperties.getProductAppendCommentTtl(), TimeUnit.SECONDS);
                 return Result.error(MessageConstant.DATA_ERROR);
             }
             RedisConnector.setHashObject(appendCommentKey, productCommentAppendSelectOne);
-            RedisConnector.expire(appendCommentKey, redisKeyTtlProperties.getProductAppendCommentTtl(), TimeUnit.SECONDS);
+            RedisConnector.expire(appendCommentKey, redisCacheTtlProperties.getProductAppendCommentTtl(), TimeUnit.SECONDS);
             ProductAppendCommentVO productAppendCommentVO = copyMapper.productCommentAppendToProductCommentAppendVO(productCommentAppendSelectOne);
             return Result.success(productAppendCommentVO);
         }
@@ -414,12 +414,12 @@ public class ProductCommentServiceImpl extends ServiceImpl<ProductCommentMapper,
             Long productCommentCountLong = lambdaQuery().eq(ProductComment::getProductId, productIdLong).count();
             if (Objects.isNull(productCommentCountLong)) {
                 StringRedisConnector.opsForValue().set(key, emptyProductCommentCount);
-                StringRedisConnector.expire(key, redisKeyTtlProperties.getProductCommentCountTtl(), TimeUnit.SECONDS);
+                StringRedisConnector.expire(key, redisCacheTtlProperties.getProductCommentCountTtl(), TimeUnit.SECONDS);
                 return Result.error(MessageConstant.DATA_ERROR);
             }
             productCommentCount = productCommentCountLong.toString();
             StringRedisConnector.opsForValue().set(key, productCommentCount);
-            StringRedisConnector.expire(key, redisKeyTtlProperties.getProductCommentCountTtl(), TimeUnit.SECONDS);
+            StringRedisConnector.expire(key, redisCacheTtlProperties.getProductCommentCountTtl(), TimeUnit.SECONDS);
             return Result.success(productCommentCount);
         }
         if (StringUtils.equals(productCommentCount, emptyProductCommentCount)) {
@@ -448,16 +448,16 @@ public class ProductCommentServiceImpl extends ServiceImpl<ProductCommentMapper,
             if (Objects.isNull(firstCommentCache)) {
                 ProductComment firstProductComment = lambdaQuery().eq(ProductComment::getId, productCommentId).one();
                 if (Objects.isNull(firstProductComment)) {
-                    setCommentRedisCache(firstCommentKey, emptyProductComment, redisKeyTtlProperties.getProductFirstCommentTtl());
+                    setCommentRedisCache(firstCommentKey, emptyProductComment, redisCacheTtlProperties.getProductFirstCommentTtl());
                     return Result.error(MessageConstant.DATA_ERROR);
                 }
                 updateLikeCount(firstProductComment, isLike);
-                setCommentRedisCache(firstCommentKey, firstProductComment, redisKeyTtlProperties.getProductFirstCommentTtl());
+                setCommentRedisCache(firstCommentKey, firstProductComment, redisCacheTtlProperties.getProductFirstCommentTtl());
                 updateProductCommentUserIdSet(firstProductComment.getId(), isLike, Long.valueOf(userId));
                 return Result.success();
             }
             updateLikeCount(firstCommentCache, isLike);
-            setCommentRedisCache(firstCommentKey, firstCommentCache, redisKeyTtlProperties.getProductFirstCommentTtl());
+            setCommentRedisCache(firstCommentKey, firstCommentCache, redisCacheTtlProperties.getProductFirstCommentTtl());
             updateProductCommentUserIdSet(firstCommentCache.getId(), isLike, Long.valueOf(userId));
             return Result.success();
         } else {
@@ -466,13 +466,13 @@ public class ProductCommentServiceImpl extends ServiceImpl<ProductCommentMapper,
             if (Objects.isNull(secondCommentCache)) {
                 ProductComment secondComment = lambdaQuery().eq(ProductComment::getId, productCommentId).one();
                 updateLikeCount(secondComment, isLike);
-                setCommentRedisCache(secondCommentKey, secondComment, redisKeyTtlProperties.getProductSecondCommentTtl());
+                setCommentRedisCache(secondCommentKey, secondComment, redisCacheTtlProperties.getProductSecondCommentTtl());
                 updateProductCommentUserIdSet(secondComment.getId(), isLike, Long.valueOf(userId));
                 return Result.success();
 
             }
             updateLikeCount(secondCommentCache, isLike);
-            setCommentRedisCache(secondCommentKey, secondCommentCache, redisKeyTtlProperties.getProductSecondCommentTtl());
+            setCommentRedisCache(secondCommentKey, secondCommentCache, redisCacheTtlProperties.getProductSecondCommentTtl());
             updateProductCommentUserIdSet(secondCommentCache.getId(), isLike, Long.valueOf(userId));
             return Result.success();
         }
@@ -530,7 +530,7 @@ public class ProductCommentServiceImpl extends ServiceImpl<ProductCommentMapper,
                 commentUserIdSet.remove(userId);
             }
             RedisConnector.opsForSet().add(key, commentUserIdSet.toArray());
-            RedisConnector.expire(key, redisKeyTtlProperties.getProductCommentUserIdSetTtl(), TimeUnit.SECONDS);
+            RedisConnector.expire(key, redisCacheTtlProperties.getProductCommentUserIdSetTtl(), TimeUnit.SECONDS);
             return;
         }
         if (isLike == 1) {
@@ -538,7 +538,7 @@ public class ProductCommentServiceImpl extends ServiceImpl<ProductCommentMapper,
         } else {
             RedisConnector.opsForSet().remove(key, userId);
         }
-        RedisConnector.expire(key, redisKeyTtlProperties.getProductCommentUserIdSetTtl(), TimeUnit.SECONDS);
+        RedisConnector.expire(key, redisCacheTtlProperties.getProductCommentUserIdSetTtl(), TimeUnit.SECONDS);
     }
 
 
@@ -591,7 +591,7 @@ public class ProductCommentServiceImpl extends ServiceImpl<ProductCommentMapper,
             productCommentList.get(index).setLike(isLike);
             String key = RedisKeyGenerator.productCommentUserIdList(commentId);
             RedisConnector.opsForSet().add(key, userIdSet.toArray(new Long[0]));
-            RedisConnector.expire(key, redisKeyTtlProperties.getProductCommentUserIdSetTtl(), TimeUnit.SECONDS);
+            RedisConnector.expire(key, redisCacheTtlProperties.getProductCommentUserIdSetTtl(), TimeUnit.SECONDS);
             needQueryEntityIdSet.remove(commentId);
         });
         //消费无点赞的评论 , 缓存用户 set 存 0L
@@ -601,7 +601,7 @@ public class ProductCommentServiceImpl extends ServiceImpl<ProductCommentMapper,
                 productComment.setLike(false);
                 String key = RedisKeyGenerator.productCommentUserIdList(commentId);
                 RedisConnector.opsForSet().add(key, DataConstant.ZERO_LONG);
-                RedisConnector.expire(key, redisKeyTtlProperties.getProductCommentUserIdSetTtl(), TimeUnit.SECONDS);
+                RedisConnector.expire(key, redisCacheTtlProperties.getProductCommentUserIdSetTtl(), TimeUnit.SECONDS);
 
             });
         }
@@ -630,7 +630,7 @@ public class ProductCommentServiceImpl extends ServiceImpl<ProductCommentMapper,
             List<ProductCommentLike> productCommentLikeList = productCommentLikeMapper.selectList(lambdaQueryWrapper);
             Set<Long> commentLikeIdSet = productCommentLikeList.stream().map(ProductCommentLike::getCommentId).collect(Collectors.toSet());
             RedisConnector.opsForSet().add(keySet, commentLikeIdSet.toArray());
-            RedisConnector.expire(keySet, redisKeyTtlProperties.getUserProductCommentLikeIdSetTtl(), TimeUnit.SECONDS);
+            RedisConnector.expire(keySet, redisCacheTtlProperties.getUserProductCommentLikeIdSetTtl(), TimeUnit.SECONDS);
             return commentLikeIdSet.contains(commentId);
 
         }

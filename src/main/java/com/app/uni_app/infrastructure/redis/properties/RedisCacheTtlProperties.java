@@ -6,9 +6,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 @Component
-@ConfigurationProperties(prefix = "redis.key")
+@ConfigurationProperties(prefix = "redis.cache.ttl")
 @Data
-public class RedisKeyTtlProperties {
+public class RedisCacheTtlProperties {
 
     private long productDetailTtl;
 

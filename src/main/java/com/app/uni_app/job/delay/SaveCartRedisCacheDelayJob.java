@@ -1,6 +1,6 @@
 package com.app.uni_app.job.delay;
 
-import com.app.uni_app.infrastructure.redis.properties.RedisKeyTtlProperties;
+import com.app.uni_app.infrastructure.redis.properties.RedisCacheTtlProperties;
 import com.app.uni_app.service.CartService;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
@@ -23,7 +23,7 @@ public class SaveCartRedisCacheDelayJob {
     private RedissonClient redissonClient;
 
     @Resource
-    private RedisKeyTtlProperties redisKeyTtlProperties;
+    private RedisCacheTtlProperties redisKeyTtlProperties;
 
     @Resource
     private CartService cartService;

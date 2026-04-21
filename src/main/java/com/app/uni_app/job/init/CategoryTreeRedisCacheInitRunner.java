@@ -17,8 +17,9 @@ public class CategoryTreeRedisCacheInitRunner  implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        log.info("categoryTreeRedisCache init...");
+        log.info("初始化 分类树 服务器缓存...");
         categoryService.updateCategoryTreeRedisCache();
+        log.info("初始化 分类树 服务器缓存成功...");
     }
 
 

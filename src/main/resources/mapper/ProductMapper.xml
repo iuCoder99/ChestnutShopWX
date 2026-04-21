@@ -64,12 +64,7 @@
         limit  #{limit}
     </select>
 
-    <select id="selectByCategoryIdPage" resultMap="ProductWithImageAndSpecResultMap">
-        <include refid="selectAllProductWithImageAndSpec_Where_SQL"/>
-        <if test="categoryId!=null and categoryId != ''">
-            and p.category_id=#{categoryId}
-        </if>
-    </select>
+
 
 
 

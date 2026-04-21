@@ -2,7 +2,7 @@ package com.app.uni_app.job.delay;
 
 import com.app.uni_app.infrastructure.redis.connect.RedisConnector;
 import com.app.uni_app.infrastructure.redis.generator.RedisKeyGenerator;
-import com.app.uni_app.infrastructure.redis.properties.RedisKeyTtlProperties;
+import com.app.uni_app.infrastructure.redis.properties.RedisCacheTtlProperties;
 import com.app.uni_app.service.impl.OrderServiceImpl;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
@@ -25,9 +25,8 @@ public class CancelUnpaidOrderDelayJob {
     private RedissonClient redissonClient;
 
     @Resource
-    private RedisKeyTtlProperties redisKeyTtlProperties;
+    private RedisCacheTtlProperties redisCacheTtlProperties;
 
-    @Resource
     @Qualifier("cancelUnpaidOrderExecutor")
     private Executor threadPool;
 
@@ -52,16 +51,16 @@ public class CancelUnpaidOrderDelayJob {
     }
 
     public void setUnpaidOrderNoToDelayQueue(String orderNO) {
-        log.info("order:{},添加延迟任务成功",orderNO);
+        log.info("order:{},添加延迟任务成功", orderNO);
         delayedQueue.remove(orderNO);
 
-        long orderTtl = redisKeyTtlProperties.getOrderTtl();
+        long orderTtl = redisCacheTtlProperties.getOrderTtl();
         delayedQueue.offer(orderNO, orderTtl, TimeUnit.SECONDS);
 
         startConsumer();
     }
 
-    public void setPaidOrderNoToCancelDelayQueue(String orderNo){
+    public void setPaidOrderNoToCancelDelayQueue(String orderNo) {
         delayedQueue.remove(orderNo);
     }
 
@@ -71,7 +70,7 @@ public class CancelUnpaidOrderDelayJob {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
                     String orderNo = blockingQueue.take();
-                    boolean isSuccess = applicationContext.getBean("orderServiceImpl",OrderServiceImpl.class).cancelOrderCommon(orderNo, ORDER_CANCEL_REASON);
+                    boolean isSuccess = applicationContext.getBean("orderServiceImpl", OrderServiceImpl.class).cancelOrderCommon(orderNo, ORDER_CANCEL_REASON);
                     RedisConnector.delete(RedisKeyGenerator.orderKey(orderNo));
                     if (!isSuccess) {
                         startConsumer();

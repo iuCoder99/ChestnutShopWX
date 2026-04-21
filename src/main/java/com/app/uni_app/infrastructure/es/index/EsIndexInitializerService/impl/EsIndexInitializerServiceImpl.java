@@ -48,11 +48,15 @@ public class EsIndexInitializerServiceImpl implements EsIndexInitializerService 
                                     .properties(ProductDocument.Fields.id, p -> p.long_(l -> l))
                                     .properties(ProductDocument.Fields.categoryId, p -> p.long_(l -> l))
                                     .properties(ProductDocument.Fields.name, p -> p.text(t -> t
+                                            .analyzer("ik_max_word")
+                                            .searchAnalyzer("ik_smart")
                                             .fields("keyword", k -> k.keyword(kw -> kw.ignoreAbove(256)))
                                     ))
                                     .properties(ProductDocument.Fields.image, p -> p.keyword(k -> k))
-                                    .properties(ProductDocument.Fields.sellPoint, p -> p.text(t -> t))
-                                    // 价格：scaledFloat 最适合金额，scalingFactor=100 表示精确到分
+                                    .properties(ProductDocument.Fields.sellPoint, p -> p.text(t -> t
+                                            .analyzer("ik_max_word")
+                                            .searchAnalyzer("ik_smart")
+                                    ))
                                     .properties(ProductDocument.Fields.price, p -> p.scaledFloat(f -> f.scalingFactor(100.0)))
                                     // 商品状态：枚举 0/1/2
                                     .properties(ProductDocument.Fields.status, p -> p.integer(i -> i))

@@ -19,7 +19,8 @@ public class CouponRedisCacheInitRunner implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        log.info("init... couponRedisCache");
+        log.info("初始化 优惠券 redis缓存...");
         couponService.updateCouponRedisCache();
+        log.info("初始化 优惠券 redis缓存成功...");
     }
 }

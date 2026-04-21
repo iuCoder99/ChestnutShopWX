@@ -54,18 +54,7 @@ public  class CaffeineUtils {
         categoryTreeCache.invalidate(CaffeineConstant.CACHE_KEY_CATEGORY_TREE);
     }
 
-    /**
-     * 获取数据库中最大和最小的商品 id map
-     */
-    public Map<String, Long> getMaxAndMinProductIdInData() {
-        return maxAndMinProductIdInDataCache.get(CaffeineConstant.CACHE_KEY_MAX_AND_MIN_PRODUCT_ID_MAP,s->productMapper.getMaxAndMinProductIdMap());
-    }
 
-    /**
-     * 更新数据库中最大和最小的商品 id map
-     */
-    public void updateMaxAndMinProductIdInData(){
-        Map<String,Long> maxAndMinProductIdMap = productMapper.getMaxAndMinProductIdMap();
-        maxAndMinProductIdInDataCache.put(CaffeineConstant.CACHE_KEY_MAX_AND_MIN_PRODUCT_ID_MAP,maxAndMinProductIdMap);
-    }
+
+
 }

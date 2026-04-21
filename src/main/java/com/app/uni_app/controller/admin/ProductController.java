@@ -3,6 +3,7 @@ package com.app.uni_app.controller.admin;
 import com.app.uni_app.common.result.CursorCommonEntity;
 import com.app.uni_app.common.result.CursorCommonResult;
 import com.app.uni_app.common.result.Result;
+import com.app.uni_app.common.result.SimpleCursorCommonResult;
 import com.app.uni_app.infrastructure.es.common.mapstruct.EsCopyMapper;
 import com.app.uni_app.infrastructure.es.document.ProductDocument;
 import com.app.uni_app.pojo.dto.AppendProductFirstCommentDTO;
@@ -31,6 +32,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ProductController {
 
+
     private final ProductService productService;
 
 
@@ -39,18 +41,20 @@ public class ProductController {
 
     private final ProductCommentService productCommentService;
 
+
     private final EsCopyMapper esCopyMapper;
 
 
     /**
      * 获取热门商品
-     *
      * @return
      */
     @GetMapping("/product/hot")
     @Operation(summary = "查询热门商品", description = "获取热门商品列表，默认最多返回10条，可通过limit参数指定数量")
-    public Result<?> getHotProduct(@RequestParam(value = "limit", defaultValue = "10") Integer limit) {
-        return productService.getHotProduct(limit);
+    public Result<List<SimpleProductVO>> getHotProduct(@RequestParam(value = "limit", defaultValue = "10") Integer limit) {
+        List<ProductDocument> hotProduct = productService.getHotProduct(limit);
+        List<SimpleProductVO> simpleProductVOS = hotProduct.stream().map(esCopyMapper::ProductDocumentToSimpleProductVO).toList();
+        return Result.success(simpleProductVOS);
     }
 
     /**
@@ -77,19 +81,6 @@ public class ProductController {
         return productService.getProductDetail(productId, userId);
     }
 
-    /**
-     * 获取商品列表
-     *
-     * @return
-     */
-    @GetMapping("/product/list")
-    @Operation(summary = "查询分类商品列表", description = "分页获取指定分类下的商品列表，默认页码1、每页10条")
-    public Result<?> getProductList(@RequestParam(value = "pageNum", defaultValue = "1") Integer pageNum,
-                                    @RequestParam(value = "pageSize", defaultValue = "10") Integer pageSize,
-                                    @RequestParam("categoryId") String categoryId) {
-        return productService.getProductList(pageNum, pageSize, categoryId);
-    }
-
 
     @GetMapping("/product/categroy/list")
     @Operation(summary = "查询分类下的商品列表", description = "分类游标查询指定分类下的简单商品列表")
@@ -99,23 +90,12 @@ public class ProductController {
         return Result.success(cursorCommonResult);
     }
 
-    /**
-     * 搜索商品列表
-     *
-     * @param pageNum
-     * @param pageSize
-     * @param keyword
-     * @return
-     */
+
     @GetMapping("/product/search")
-    @Operation(summary = "搜索商品", description = "分页搜索商品，支持一级分类ID、二级分类ID、关键词筛选，默认页码1、每页80条，默认排序方式为default(销量)")
-    public Result<?> searchProductList(@RequestParam(value = "pageNum", defaultValue = "1") Integer pageNum,
-                                       @RequestParam(value = "pageSize", defaultValue = "80") Integer pageSize,
-                                       @RequestParam(value = "sortType", defaultValue = "default") String sortType,
-                                       String firstCategoryId,
-                                       String secondCategoryId,
-                                       String keyword) {
-        return productService.searchProductList(pageNum, pageSize, firstCategoryId, secondCategoryId, sortType, keyword);
+    @Operation(summary = "关键词搜索商品", description = "关键词游标分类搜索商品,默认排序方式为default(销量)")
+    public Result<CursorCommonResult> searchProductList(@Valid CursorCommonEntity cursorCommonEntity , String keyword) {
+        CursorCommonResult cursorCommonResult = productService.searchProductList(cursorCommonEntity, keyword);
+        return Result.success(cursorCommonResult);
     }
 
     /**
@@ -133,25 +113,20 @@ public class ProductController {
         return Result.success(simpleProductVOS);
     }
 
-    /**
-     * 获取商品规格价格
-     *
-     * @return
-     */
+
     @GetMapping("/product/spec/price")
     @Operation(summary = "查询商品规格价格", description = "根据商品 ID和规格 ID获取对应规格的商品价格")
     public Result<?> getProductSpecPrice(@RequestParam("productId") String productId, @RequestParam("specId") String specId) {
         return productService.getProductSpecPrice(productId, specId);
     }
 
-    /**
-     * 滚动查询的商品列表
-     * @return
-     */
+
+
     @GetMapping("/product/scroll/query/list")
     @Operation(summary = "滚动查询商品列表", description = "以滚动加载方式获取商品列表")
-    public Result<?> getSimpleProductByScrollQuery() {
-        return productService.getSimpleProductByScrollQuery();
+    public Result<SimpleCursorCommonResult> getSimpleProductByScrollQuery(Long beginId , @RequestParam(defaultValue = "80") Integer querySize) {
+        SimpleCursorCommonResult simpleProductByScrollQuery = productService.getSimpleProductByScrollQuery(beginId, querySize);
+        return Result.success(simpleProductByScrollQuery);
     }
 
 

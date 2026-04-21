@@ -4,6 +4,8 @@ package com.app.uni_app.job.schedule;
 import com.app.uni_app.infrastructure.redis.connect.RedisConnector;
 import com.app.uni_app.infrastructure.redis.generator.RedisKeyGenerator;
 import com.app.uni_app.infrastructure.redis.generator.RedisMessageGenerator;
+import com.app.uni_app.job.constant.common.JobCommonConstant;
+import com.app.uni_app.job.constant.schedule.JobScheduleConstant;
 import com.app.uni_app.mapper.ProductCommentLikeMapper;
 import com.app.uni_app.mapper.ProductCommentMapper;
 import com.app.uni_app.pojo.entity.ProductCommentLike;
@@ -23,10 +25,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ExecutorConsumeProductCommentLikeTask {
 
-    private static final String PREFIX_SCHEDULED_EXECUTOR_TASK = "定时任务执行：";
     private static final String BUSINESS = "消费商品评论点赞信息";
-    private static final String THREAD_NAME = " | 线程名: ";
-    private static final String THREAD_ID = " | 线程ID: ";
 
     private final ProductCommentLikeMapper productCommentLikeMapper;
 
@@ -38,7 +37,11 @@ public class ExecutorConsumeProductCommentLikeTask {
     @Scheduled(cron = "0/30 * * * * ?")
     public void consumeProductCommentLike() {
         executorSchedulerCommon.execute(() -> {
-                        log.info(PREFIX_SCHEDULED_EXECUTOR_TASK + BUSINESS + THREAD_NAME + "{}" + THREAD_ID + "{}", Thread.currentThread().getName(), Thread.currentThread().getId());
+                        log.info(JobScheduleConstant.PREFIX_SCHEDULED_EXECUTOR_TASK + BUSINESS
+                                + JobCommonConstant.THREAD_NAME + "{}"
+                                + JobCommonConstant.THREAD_ID + "{}"
+                                , Thread.currentThread().getName()
+                                , Thread.currentThread().getId());
                         String key = RedisKeyGenerator.productCommentLikeMessageList();
                         List<Object> messageList = RedisConnector.opsForList().range(key, -500, -1);
                         if (Objects.isNull(messageList) || messageList.isEmpty()) {

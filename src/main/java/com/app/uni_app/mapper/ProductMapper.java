@@ -3,14 +3,10 @@ package com.app.uni_app.mapper;
 
 import com.app.uni_app.pojo.entity.Product;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -26,12 +22,8 @@ public interface ProductMapper extends BaseMapper<Product> {
 
     Product selectByProductId(String productId, String userId);
 
-    IPage<Product> selectByCategoryIdPage(Page<Product> productPage, String categoryId);
-
     List<Product> getBriefProduct(@Param("productIdsList") List<Long> productIdsList);
 
-    @Select("select max(id) as maxProductIdInData,min(id) as minProductIdInData from product")
-    Map<String,Long> getMaxAndMinProductIdMap();
 
     List<Product> getProductDetailByProductIdSet(@Param("productIdSet") Set<Long> productIdSet);
 }

@@ -21,12 +21,11 @@ public class SimpleCursorCommonEntity {
     @Schema(description = "末尾查询 id")
     private Long sortId;
 
-    @Schema(description = "查询数量")
+    @Schema(description = "查询数量 , 默认查询数量 : 20")
     private Integer querySize;
 
-    private final Integer finalQuerySize = 20;
 
     public Integer getQuerySize() {
-        return querySize == null ? finalQuerySize : querySize;
+        return querySize == null ? 20 : querySize;
     }
 }

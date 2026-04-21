@@ -1,22 +1,24 @@
 package com.app.uni_app.service.impl;
 
 
-import com.app.uni_app.common.constant.CaffeineConstant;
+import com.app.uni_app.aop.annotation.common.ParamCheckAnnotation;
 import com.app.uni_app.common.constant.DataConstant;
 import com.app.uni_app.common.constant.MessageConstant;
 import com.app.uni_app.common.mapstruct.CopyMapper;
-import com.app.uni_app.common.result.CursorCommonEntity;
-import com.app.uni_app.common.result.CursorCommonResult;
-import com.app.uni_app.common.result.PageResult;
-import com.app.uni_app.common.result.Result;
-import com.app.uni_app.common.util.*;
+import com.app.uni_app.common.result.*;
+import com.app.uni_app.common.util.BloomFilterUtils;
+import com.app.uni_app.common.util.CaffeineUtils;
+import com.app.uni_app.common.util.JacksonUtils;
+import com.app.uni_app.common.util.SessionUtils;
 import com.app.uni_app.infrastructure.es.common.mapstruct.EsCopyMapper;
 import com.app.uni_app.infrastructure.es.document.ProductDocument;
 import com.app.uni_app.infrastructure.es.service.ProductDocumentService;
 import com.app.uni_app.infrastructure.redis.connect.RedisConnector;
 import com.app.uni_app.infrastructure.redis.connect.StringRedisConnector;
 import com.app.uni_app.infrastructure.redis.generator.RedisKeyGenerator;
-import com.app.uni_app.infrastructure.redis.properties.RedisKeyTtlProperties;
+import com.app.uni_app.infrastructure.redis.properties.RedisCacheCountProperties;
+import com.app.uni_app.infrastructure.redis.properties.RedisCacheTtlProperties;
+import com.app.uni_app.infrastructure.redis.service.ProductRedisCacheService;
 import com.app.uni_app.infrastructure.rocketmq.constant.failed.MqFailedMessageConstant;
 import com.app.uni_app.infrastructure.rocketmq.constant.product.MqProductConstant;
 import com.app.uni_app.mapper.ProductMapper;
@@ -69,6 +71,12 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
     private final ProductDocumentService productDocumentService;
 
 
+    private final ProductRedisCacheService productRedisCacheService;
+
+
+    private final RedisCacheCountProperties redisCacheCountProperties;
+
+
     private final CopyMapper copyMapper;
 
 
@@ -90,7 +98,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
     private final MqConsumerFailedMsgService mqConsumerFailedMsgService;
 
 
-    private final RedisKeyTtlProperties redisKeyTtlProperties;
+    private final RedisCacheTtlProperties redisCacheTtlProperties;
 
     private static final String PRODUCT_LIST = "productList";
     private static final String END_PRODUCT_ID = "endProductId";
@@ -103,34 +111,22 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
      * @return 返回商品实体类
      */
     @Override
-    public Result<?> getHotProduct(Integer limit) {
-        String hotProductKey = RedisKeyGenerator.hotProductKey();
-        Map<String, Object> hotProductMap = RedisConnector.opsForHash().entries(hotProductKey);
-        List<Product> hotProducts;
-        if (hotProductMap.isEmpty()) {
-            hotProducts = productMapper.selectOrderByDescSalesCountLimit(limit);
-            List<Long> hotProductIdList = new ArrayList<>(hotProducts.size());
-            Map<String, Object> redisMap = new HashMap<>(hotProducts.size());
-            for (Product hotProduct : hotProducts) {
-                Long hotProductId = hotProduct.getId();
-                String hashKey = RedisKeyGenerator.hotProductHashKey(hotProductId);
-                hotProductIdList.add(hotProductId);
-                redisMap.put(hashKey, hotProduct);
-            }
-            String hotProductIdListJson = JacksonUtils.toJson(hotProductIdList);
-            StringRedisConnector.opsForValue().set(RedisKeyGenerator.hotProductIdList(), hotProductIdListJson);
-            RedisConnector.opsForHash().putAll(hotProductKey, redisMap);
-        } else {
-            hotProducts = hotProductMap.values().stream()
-                    .map(hotProduct -> (Product) hotProduct)
-                    .sorted(Comparator.comparing(Product::getSalesCount).reversed())
-                    .collect(Collectors.toList());
+    public List<ProductDocument> getHotProduct(Integer limit) {
+        if (limit > redisCacheCountProperties.getHotProductCacheSize()){
+            throw new RuntimeException("超出热门商品最大缓存数量");
         }
-        List<SimpleProductVO> simpleProductVOs = hotProducts.stream()
-                .map(copyMapper::productToSimpleProductVO).toList();
-        return Result.success(simpleProductVOs);
-
-
+        List<ProductDocument> hotProductList = productRedisCacheService.getHotProduct();
+        List<Long> hotProductIdList = productRedisCacheService.getHotProductIdList();
+        List<ProductDocument> productDocumentResultList = new ArrayList<>(hotProductIdList.size());
+        HashMap<Long, ProductDocument> mapping = new HashMap<>(hotProductList.size());
+        for (ProductDocument productDocument : hotProductList) {
+            mapping.put(productDocument.getId(),productDocument);
+        }
+        for (Long id : hotProductIdList) {
+            ProductDocument productDocument = mapping.get(id);
+            productDocumentResultList.add(productDocument);
+        }
+       return productDocumentResultList.stream().limit(limit).toList();
     }
 
     /**
@@ -251,7 +247,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
             Map<String, Object> productDetailResultMap = JacksonUtils.toMap(product);
             productDetailResultMap.put(Product.Fields.isCollection, CommonStatus.INACTIVE.getNumber());
             RedisConnector.opsForHash().putAll(productDetailKey, productDetailResultMap);
-            StringRedisConnector.expire(productDetailKey, redisKeyTtlProperties.getProductDetailTtl(), TimeUnit.SECONDS);
+            StringRedisConnector.expire(productDetailKey, redisCacheTtlProperties.getProductDetailTtl(), TimeUnit.SECONDS);
             return Result.success(product);
 
         }
@@ -264,7 +260,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
             List<ProductCollection> productCollectionList = collectionService.lambdaQuery().eq(ProductCollection::getProductId, productId).list();
             userIdSet = productCollectionList.stream().map(ProductCollection::getUserId).collect(Collectors.toSet());
             RedisConnector.opsForValue().set(productCollectionKey, userIdSet);
-            RedisConnector.expire(productDetailKey, redisKeyTtlProperties.getProductCollectionTtl(), TimeUnit.SECONDS);
+            RedisConnector.expire(productDetailKey, redisCacheTtlProperties.getProductCollectionTtl(), TimeUnit.SECONDS);
 
         }
         Product resultProduct = JacksonUtils.fromMap(productDetailMap, Product.class);
@@ -340,22 +336,6 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         return productList;
     }
 
-    /**
-     * 获取商品列表
-     *
-     * @param pageNum
-     * @param pageSize
-     * @param categoryId
-     * @return
-     */
-    @Override
-    public Result<?> getProductList(Integer pageNum, Integer pageSize, String categoryId) {
-        IPage<Product> page = productMapper.selectByCategoryIdPage(new Page<>(pageNum, pageSize), categoryId);
-        PageResult pageResult = PageResult.builder().list(page.getRecords()).total(page.getTotal())
-                .pageNum(pageNum).pageSize(pageSize).build();
-        return Result.success(pageResult);
-    }
-
 
     /**
      * 游标查询指定分类下的简单商品列表, 通过 es 进行查询
@@ -372,6 +352,41 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         Integer querySize = cursorCommonEntity.getQuerySize();
         List<ProductDocument> productDocuments = productDocumentService.searchByCursorByCategoryId(
                 querySize, productSortTypeEnum, sortValue, sortId, categoryId, isFirstCategoryId);
+        return getCursorCommonResult(productDocuments, querySize, productSortTypeEnum, sortType);
+
+    }
+
+
+
+    /**
+     * 游标分类查询简介商品列表
+     * @param cursorCommonEntity 分类游标通用实体
+     * @param keyword 关键词
+     * @return 分类游标通用实体
+     */
+    @Override
+    @ParamCheckAnnotation
+    public CursorCommonResult searchProductList(CursorCommonEntity cursorCommonEntity, String keyword) {
+        Integer querySize = cursorCommonEntity.getQuerySize();
+        String sortType = cursorCommonEntity.getSortType();
+        Long sortId = cursorCommonEntity.getSortId();
+        String sortValue = cursorCommonEntity.getSortValue();
+        ProductSortTypeEnum productSortTypeEnum = ProductSortTypeEnum.getByValue(sortType);
+        sortValue = ProductSortTypeEnum.filterFormatSortValue(productSortTypeEnum, sortValue);
+        List<ProductDocument> productDocuments = productDocumentService.searchByCursorByName(querySize, productSortTypeEnum, sortValue, sortId, keyword);
+        return getCursorCommonResult(productDocuments, querySize, productSortTypeEnum, sortType);
+
+    }
+
+    /**
+     * 游标结果封装方法
+     * @param productDocuments 在商品文档服务 查询出来的 原始商品文档
+     * @param querySize 查询数量
+     * @param productSortTypeEnum 商品排序种类枚举
+     * @param sortType 排序种类字符串
+     * @return 游标结果
+     */
+    private CursorCommonResult getCursorCommonResult(List<ProductDocument> productDocuments, Integer querySize, ProductSortTypeEnum productSortTypeEnum, String sortType) {
         boolean isEnd = false;
         if (productDocuments.isEmpty()) {
             return CursorCommonResult.builder()
@@ -396,40 +411,6 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
                 .list(simpleProductVOS)
                 .cursorCommonEntity(cursorCommonEntityResult)
                 .build();
-
-    }
-
-    /**
-     * 查询商品列表
-     *
-     * @param pageNum
-     * @param pageSize
-     * @param firstCategoryId
-     * @param secondCategoryId
-     * @param sortType
-     * @param keyword
-     * @return
-     */
-    @Override
-    public Result<?> searchProductList(Integer pageNum, Integer pageSize, String firstCategoryId, String secondCategoryId, String sortType, String keyword) {
-        String productSortType = ProductSortTypeEnum.getByValue(sortType).getDbValue();
-        Page<Product> page = new Page<>(pageNum, pageSize);
-        Page<Product> pageResultBox;
-        if (StringUtils.isBlank(firstCategoryId) && StringUtils.isBlank(secondCategoryId)) {
-            pageResultBox = lambdaQuery().like(Product::getName, keyword).last("ORDER BY " + productSortType).page(page);
-        } else if (StringUtils.isNotBlank(firstCategoryId) && StringUtils.isBlank(secondCategoryId)) {
-            List<Long> secondCategoryIdList = RedisConnector.getHashField(RedisKeyGenerator.categoryTreeKey(), RedisKeyGenerator.categoryTreeHashKey(Long.valueOf(firstCategoryId)), new TypeReference<List<Long>>() {
-            });
-            pageResultBox = lambdaQuery().like(Product::getName, keyword).in(Product::getCategoryId, secondCategoryIdList).last("ORDER BY " + productSortType).page(page);
-        } else {
-            pageResultBox = lambdaQuery().eq(Product::getCategoryId, secondCategoryId).like(Product::getName, keyword).last("ORDER BY " + productSortType).page(page);
-
-        }
-
-        PageResult pageResult = PageResult.builder().list(pageResultBox.getRecords()).total(pageResultBox.getTotal())
-                .pageNum(pageNum).pageSize(pageSize).build();
-
-        return Result.success(pageResult);
     }
 
     /**
@@ -566,42 +547,42 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
 
     /**
      * 滚动查询的商品列表
-     * @return
+     * 判断是否是首次查询,是获取随机开始id ,然后进行es 游标查询
+     * @return 游标返回实体
      */
     @Override
-    public Result getSimpleProductByScrollQuery() {
-        HashSet<Long> loadedIdSet = sessionUtils.getLoadedIdSet();
-        Long scrollLoadedEndId = sessionUtils.getScrollLoadedEndId();
-        Map<String, Long> maxAndMinProductIdInData = caffeineUtils.getMaxAndMinProductIdInData();
-        Long maxProductIdInDataOrDefault = maxAndMinProductIdInData.getOrDefault(CaffeineConstant.MAP_KEY_MAX_PRODUCT_ID_IN_DATA, DataConstant.ZERO_LONG);
-        Long minProductIdInDataOrDefault = maxAndMinProductIdInData.getOrDefault(CaffeineConstant.MAP_KEY_MIN_PRODUCT_ID_IN_DATA, DataConstant.ZERO_LONG);
-        if (scrollLoadedEndId.equals(DataConstant.ZERO_LONG)) {
-            if (maxProductIdInDataOrDefault.equals(DataConstant.ZERO_LONG)) {
-                return Result.success(CollectionUtils.emptyCollection());
+    public SimpleCursorCommonResult getSimpleProductByScrollQuery(Long beginId , Integer querySize) {
+        if (Objects.isNull(beginId)) {
+            Long maxProductId = productRedisCacheService.getMaxProductId();
+            long maxBeginId = Math.round(maxProductId * DataConstant.QUERY_SECURITY_NUMBER);
+            maxBeginId = Math.max(maxBeginId, 2);
+            beginId = ThreadLocalRandom.current().nextLong(1, maxBeginId);
+        }
+            List<SimpleProductVO> resultList = productDocumentService.searchLimitAfterProductId(querySize, beginId).stream()
+                    .map(esCopyMapper::ProductDocumentToSimpleProductVO)
+                    .collect(Collectors.toList());
+            if (resultList.isEmpty()) {
+                return SimpleCursorCommonResult.builder().list(Collections.emptyList())
+                        .isEnd(true)
+                        .build();
             }
-            long bound = Math.round(maxProductIdInDataOrDefault * DataConstant.QUERY_SECURITY_NUMBER);
-            bound = Math.max(bound, 2);
-            scrollLoadedEndId = ThreadLocalRandom.current().nextLong(1, bound);
+            Long endId = resultList.get(resultList.size() - 1).getId();
+            boolean isEnd = resultList.size() < querySize;
+           Collections.shuffle(resultList);
+            SimpleCursorCommonEntity simpleCursorCommonEntity = SimpleCursorCommonEntity.builder()
+                    .querySize(querySize)
+                    .sortId(endId)
+                    .build();
+            return SimpleCursorCommonResult.builder()
+                    .list(resultList)
+                    .isEnd(isEnd)
+                    .simpleCursorCommonEntity(simpleCursorCommonEntity)
+                    .build();
+
         }
-        List<Product> productList = lambdaQuery().lt(Product::getId, scrollLoadedEndId).orderByDesc(Product::getId).last("LIMIT " + DataConstant.PRODUCT_SCROLL_QUERY_NUMBER).list();
-        if (productList.isEmpty()) {
-            return Result.success(CollectionUtils.emptyCollection());
-        }
-        List<Product> products = productList.stream().filter(product -> !loadedIdSet.contains(product.getId())).toList();
-        scrollLoadedEndId = productList.get(productList.size() - DataConstant.ONE_INT).getId();
-        Set<Long> queryProductIds = products.stream().map(Product::getId).collect(Collectors.toSet());
-        loadedIdSet.addAll(queryProductIds);
-        sessionUtils.setLoadedIdSet(loadedIdSet);
-        sessionUtils.setScrollLoadedEndId(scrollLoadedEndId);
-        List<SimpleProductVO> simpleProductVOS = productList.stream().map(copyMapper::productToSimpleProductVO).collect(Collectors.toList());
-        Collections.shuffle(simpleProductVOS);
-        if (scrollLoadedEndId.equals(minProductIdInDataOrDefault)) {
-            sessionUtils.removeLoadedIdSet();
-            sessionUtils.removeScrollLoadedEndId();
-        }
-        return Result.success(simpleProductVOS);
     }
-}
+
+
 
 
 

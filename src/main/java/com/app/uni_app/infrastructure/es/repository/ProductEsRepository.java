@@ -1,6 +1,7 @@
 package com.app.uni_app.infrastructure.es.repository;
 
 import com.app.uni_app.infrastructure.es.document.ProductDocument;
+import com.app.uni_app.pojo.emums.CommonSortTypeEnum;
 import com.app.uni_app.pojo.emums.ProductSortTypeEnum;
 
 import java.util.List;
@@ -31,6 +32,12 @@ public interface ProductEsRepository {
      * @return 商品文档列表
      */
     List<ProductDocument> getByIdList(List<Long> idList);
+
+    /**
+     * 获取最大商品文档 id
+     * @return 最大商品文档 id
+     */
+    Long getMaxId();
 
 
     /**
@@ -66,6 +73,15 @@ public interface ProductEsRepository {
      */
     List<ProductDocument> searchByName(String name, Integer limit);
 
+
+    /**
+     * 查询指定id后的指定数量的商品文档
+     * @param limit
+     * @param productId
+     * @return
+     */
+    List<ProductDocument> searchLimitAfterId(Integer limit , Long productId);
+
     /**
      * 根据查询种类和分类 id 首次进行游标查询 (无需开始游标)
      * @param productSortTypeEnum 商品排序格式
@@ -77,7 +93,7 @@ public interface ProductEsRepository {
 
 
     /**
-     * 根据查询种类和分类 id 首次进行游标查询 (需要开始游标)
+     * 根据查询种类和分类 id 进行游标查询 (需要开始游标)
      * @param productSortTypeEnum 商品排序格式
      * @param categoryId 查询商品分类 id
      * @param limit 查询数
@@ -89,7 +105,7 @@ public interface ProductEsRepository {
 
 
     /**
-     * 根据查询种类和分类 id 首次进行游标查询 (需要开始游标)
+     * 根据查询种类和分类 id 首次进行游标查询 (无需开始游标)
      * @param productSortTypeEnum 商品排序格式
      * @param categoryIdList 分类 id 集合
      * @param limit 查询数
@@ -98,7 +114,7 @@ public interface ProductEsRepository {
      List<ProductDocument> searchLimitByProductSortTypeAndCategoryIdList(ProductSortTypeEnum productSortTypeEnum, List<Long> categoryIdList, Integer limit);
 
     /**
-     * 根据查询种类和分类 id 首次进行游标查询 (需要开始游标)
+     * 根据查询种类和分类 id 进行游标查询 (需要开始游标)
      * @param productSortTypeEnum 商品排序格式
      * @param categoryIdList 分类 id 集合
      * @param limit 查询数
@@ -109,6 +125,34 @@ public interface ProductEsRepository {
     List<ProductDocument> searchCursorByProductSortTypeAndCategoryIdList(ProductSortTypeEnum productSortTypeEnum, List<Long> categoryIdList, Integer limit, String sortValue, Long productId);
 
 
+    /**
+     * 根据查询种类和商品名 进行首次游标查询(无需开始游标)
+     * @param productSortTypeEnum 商品排序格式
+     * @param keyword 商品关键词
+     * @param limit 查询数
+     * @return 商品文档列表
+     */
+    List<ProductDocument> searchLimitByProductSortTypeAndProductName(ProductSortTypeEnum productSortTypeEnum , String keyword, Integer limit);
 
+    /**
+     * 根据查询种类和商品名 进行游标查询(需要开始游标)
+     * @param productSortTypeEnum 商品排序格式
+     * @param keyword 商品关键词
+     * @param limit 查询数
+     * @param sortValue 开始游标值
+     * @param productId 开始商品 id
+     * @return 商品文档列表
+     */
+    List<ProductDocument> searchCursorByProductSortTypeAndProductName(ProductSortTypeEnum productSortTypeEnum, String keyword, Integer limit , String sortValue, Long productId);
+
+
+    /**
+     * 根据字段指定排序 查询指定数量商品文档
+     * @param limit 查询数
+     * @param fieldName 字段名
+     * @param commonSortTypeEnum 排序顺序
+     * @return 商品文档列表
+     */
+    List<ProductDocument> searchLimitOrderByField(Integer limit , String fieldName, CommonSortTypeEnum commonSortTypeEnum);
 
 }

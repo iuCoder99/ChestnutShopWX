@@ -16,7 +16,7 @@ import com.app.uni_app.common.util.DateUtils;
 import com.app.uni_app.common.util.SessionUtils;
 import com.app.uni_app.infrastructure.redis.connect.RedisConnector;
 import com.app.uni_app.infrastructure.redis.generator.RedisKeyGenerator;
-import com.app.uni_app.infrastructure.redis.properties.RedisKeyTtlProperties;
+import com.app.uni_app.infrastructure.redis.properties.RedisCacheTtlProperties;
 import com.app.uni_app.job.delay.CancelUnpaidOrderDelayJob;
 import com.app.uni_app.mapper.OrderMapper;
 import com.app.uni_app.pojo.dto.OrderDTO;
@@ -62,7 +62,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     private SnowflakeIdGenerator snowflakeIdGenerator;
 
     @Resource
-    private RedisKeyTtlProperties redisKeyTtlProperties;
+    private RedisCacheTtlProperties redisCacheTtlProperties;
 
     @Resource
     private OrderMapper orderMapper;
@@ -165,7 +165,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             order = orderMapper.getOrderDesc(orderNo);
             order = Objects.isNull(order) ? emptyOrder : order;
             RedisConnector.setHashObject(key, order);
-            RedisConnector.expire(key, redisKeyTtlProperties.getOrderTtl(), TimeUnit.SECONDS);
+            RedisConnector.expire(key, redisCacheTtlProperties.getOrderTtl(), TimeUnit.SECONDS);
         }
         if (order.equals(emptyOrder)) {
             return Result.error(MessageConstant.ORDER_NOT_FOUND);

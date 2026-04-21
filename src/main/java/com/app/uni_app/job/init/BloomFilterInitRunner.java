@@ -5,16 +5,17 @@ import com.app.uni_app.pojo.emums.CommonStatus;
 import com.app.uni_app.pojo.entity.Product;
 import com.app.uni_app.service.ProductService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 
 @Component
 @Slf4j
-public class BloomFilterInitRunner {
+public class BloomFilterInitRunner implements ApplicationRunner {
 
     @Resource
     private BloomFilterUtils bloomFilterUtils;
@@ -23,19 +24,15 @@ public class BloomFilterInitRunner {
     private ProductService productService;
 
 
-    private static final String INIT_BLOOM_FILTER = "init bloomFilter...";
-
-
-    /**
-     * 初始化缓存
-     */
-    @PostConstruct
-    public void onApplicationEvent() {
-        log.info(INIT_BLOOM_FILTER);
-
-        //  初始化布隆过滤器
+    @Override
+    public void run(ApplicationArguments args) {
+        log.info("初始化 布隆过滤器 ...");
         initBloomFilter();
+        log.info("初始化 布隆过滤器 成功...");
+
+
     }
+
 
     private void initBloomFilter() {
         try {

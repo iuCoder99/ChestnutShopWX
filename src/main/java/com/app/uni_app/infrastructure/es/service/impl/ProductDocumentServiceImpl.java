@@ -1,10 +1,12 @@
 package com.app.uni_app.infrastructure.es.service.impl;
 
+import com.app.uni_app.aop.annotation.common.ParamCheckAnnotation;
 import com.app.uni_app.infrastructure.es.document.ProductDocument;
 import com.app.uni_app.infrastructure.es.repository.ProductEsRepository;
 import com.app.uni_app.infrastructure.es.service.ProductDocumentService;
 import com.app.uni_app.infrastructure.redis.connect.RedisConnector;
 import com.app.uni_app.infrastructure.redis.generator.RedisKeyGenerator;
+import com.app.uni_app.pojo.emums.CommonSortTypeEnum;
 import com.app.uni_app.pojo.emums.ProductSortTypeEnum;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
@@ -60,6 +62,12 @@ public class ProductDocumentServiceImpl implements ProductDocumentService {
 
     }
 
+
+    @Override
+    public Long getMaxProductDocumentId() {
+      return productEsRepository.getMaxId();
+    }
+
     @Override
     public void saveProductDocument(ProductDocument productDocument) {
         productEsRepository.save(productDocument);
@@ -68,6 +76,12 @@ public class ProductDocumentServiceImpl implements ProductDocumentService {
     @Override
     public void batchSaveProductDocument(List<ProductDocument> productDocumentList) {
         productEsRepository.batchSave(productDocumentList);
+    }
+
+    @Override
+    @ParamCheckAnnotation
+    public List<ProductDocument> searchLimitAfterProductId(Integer limit, Long productId) {
+       return productEsRepository.searchLimitAfterId(limit,productId);
     }
 
     @Override
@@ -96,5 +110,18 @@ public class ProductDocumentServiceImpl implements ProductDocumentService {
         return productEsRepository.searchCursorByProductSortTypeAndCategoryId(productSortTypeEnum, categoryId, limit, sortValue, productId);
     }
 
+    @Override
+    public List<ProductDocument> searchByCursorByName(Integer limit, ProductSortTypeEnum productSortTypeEnum, String sortValue, Long productId, String keyword) {
+        //首次游标查询
+        if (Objects.isNull(sortValue) || Objects.isNull(productId)) {
+            return productEsRepository.searchLimitByProductSortTypeAndProductName(productSortTypeEnum, keyword, limit);
+        }
+        //游标查询
+        return productEsRepository.searchCursorByProductSortTypeAndProductName(productSortTypeEnum, keyword, limit, sortValue, productId);
+    }
 
+    @Override
+    public List<ProductDocument> searchLimitHotProductDocument(Integer limit) {
+       return productEsRepository.searchLimitOrderByField(limit,ProductDocument.Fields.salesCount, CommonSortTypeEnum.DESC);
+    }
 }

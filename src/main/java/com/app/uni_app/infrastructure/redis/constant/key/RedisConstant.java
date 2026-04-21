@@ -1,4 +1,4 @@
-package com.app.uni_app.infrastructure.redis.constant;
+package com.app.uni_app.infrastructure.redis.constant.key;
 
 /**
  * 规范:一级key: PREFIX_... = "...:"
@@ -36,6 +36,7 @@ public class RedisConstant {
     public static final String APPEND_COMMENT="appendComment:";
     public static final String COMMENT_COUNT = "commentCount:";
     public static final String USE_STATUS = "useStatus:";
+    public static final String MAX_PRODUCT_ID = "maxProductId";
 
     public static final String COUPON_FIXED_TIME_UN_BEGIN = "couponFixedTimeUnBegin";
     public static final String COUPON_FIXED_TIME_IN_PROGRESS = "couponFixedTimeInProgress";
